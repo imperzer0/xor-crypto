@@ -233,7 +233,7 @@ int main(int argc, char** argv)
 			archive_directory(resolved, tmp_zip_file);
 			if (!::stat(argv[3], &st))
 			{
-				std::cout << "File " << argv[3] << " will be overwritten. Do you agree?(y/N)";
+				std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N)";
 				char y_n;
 				std::cin >> y_n;
 				if (y_n == 'Y' || y_n == 'y')

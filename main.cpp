@@ -4,6 +4,56 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <cstring>
+#include <termios.h>
+#include <unistd.h>
+
+struct termios* stdin_defaults = nullptr;
+struct termios* stdout_defaults = nullptr;
+
+void setting1()
+{
+	if (stdin_defaults == nullptr)
+	{
+		stdin_defaults = new termios;
+	}
+	::tcgetattr(0, stdin_defaults);
+	struct termios settings = *stdin_defaults;
+	settings.c_lflag &= (~ICANON);
+	settings.c_lflag &= (~ECHO);
+	settings.c_cc[VTIME] = 0;
+	settings.c_cc[VMIN] = 1;
+	::tcsetattr(0, TCSANOW, &settings);
+}
+
+void setting2()
+{
+	if (stdout_defaults == nullptr)
+	{
+		stdout_defaults = new termios;
+	}
+	::tcgetattr(1, stdout_defaults);
+	struct termios settings = *stdout_defaults;
+	settings.c_lflag &= (~ICANON);
+	settings.c_lflag &= (~ECHO);
+	settings.c_cc[VTIME] = 0;
+	settings.c_cc[VMIN] = 1;
+	::tcsetattr(1, TCSANOW, &settings);
+}
+
+void default_()
+{
+	if (stdin_defaults != nullptr)
+	{
+		::tcsetattr(0, TCSANOW, stdin_defaults);
+		stdin_defaults = nullptr;
+	}
+	
+	if (stdout_defaults != nullptr)
+	{
+		::tcsetattr(1, TCSANOW, stdout_defaults);
+		stdout_defaults = nullptr;
+	}
+}
 
 static void error(const std::string& error)
 {
@@ -47,6 +97,7 @@ static void walk_though_directory(const std::string& start_path, const std::stri
 				{
 					error("Failed to add file " + fullname + " to zip archive. " + zip_strerror(zipper));
 				}
+				std::cout << "Compressing file: \"" << fullname << "\" to temporary zip.\n";
 				if (zip_file_add(zipper, fullname.substr(start_path.length() + 1).c_str(), source, ZIP_FL_ENC_UTF_8) < 0)
 				{
 					zip_source_free(source);
@@ -86,14 +137,14 @@ static void help(FILE* output_stream, const char* appname)
 {
 	fprintf(
 			output_stream,
-			"Usage:\t%s (encrypt / e) <input_dir> <encrypted_file_name> <password>\n or\n"
-			"      \t%s (decrypt / d) <input_file> <output_file> <password>",
+			"Usage:\t%s (encrypt / e) <input_path> <encrypted_filename> <password>\n or\n"
+			"      \t%s (decrypt / d) <input_filename> <output_filename> <password>",
 			appname, appname
 	);
 	exit(0);
 }
 
-#define BUFFER_SIZE 128
+#define BUFFER_SIZE 1024
 
 static void xor_crypt(const std::string& input_file, const std::string& output_file, const std::string& password)
 {
@@ -106,7 +157,9 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 	FILE* output_f = ::fopen(output_file.c_str(), "wb");
 	unsigned char buffer[BUFFER_SIZE];
 	int password_iter = 0;
-	size_t read;
+	size_t read, progress = 0, file_size = st.st_size;
+	std::cout << std::fixed;
+	std::cout.precision(2);
 	while (!::feof(input_f))
 	{
 		::bzero(buffer, BUFFER_SIZE);
@@ -117,6 +170,8 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 			fclose(output_f);
 			error("Failed to read bytes from file " + input_file + ".");
 		}
+		
+		progress += read;
 		
 		for (int i = 0; i < read; ++i)
 		{
@@ -131,7 +186,10 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 		}
 		
 		::fwrite(buffer, sizeof(char), read, output_f);
+		
+		std::cout << "Encrypting: " << (double)progress * 100.0 / (double)file_size << "%\r"; // 11 + (1 -> 3) + 2 = 14 -> 16
 	}
+	std::cout << "\n";
 	fclose(input_f);
 	fclose(output_f);
 }
@@ -147,28 +205,57 @@ static void remove_file(const char* name)
 
 int main(int argc, char** argv)
 {
-	if (argc != 5)
+	setting1();
+	setting2();
+	
+	if (argc < 2)
 	{
 		help(stdout, argv[0]);
 	}
 	
-	if ((!strcmp(argv[1], "encrypt") || !strcmp(argv[1], "e")))
+	if ((!strcmp(argv[1], "encrypt") || !strcmp(argv[1], "e")) && argc == 5)
 	{
-		std::string tmp_zip_file(argv[3]);
-		tmp_zip_file += ".0";
-		struct stat st;
-		while (!::stat(tmp_zip_file.c_str(), &st))
+		std::string tmp_zip_file;
+		char* resolved = ::realpath(argv[2], nullptr);
+		if (resolved == nullptr)
 		{
-			tmp_zip_file += ".0";
+			error("Can not access file " + std::string(argv[2]) + ". Maybe it does not exists.");
 		}
-		
-		archive_directory(argv[2], tmp_zip_file);
-		
-		remove_file(argv[3]);
+		if (is_dir(resolved))
+		{
+			tmp_zip_file = argv[3];
+			tmp_zip_file += ".0";
+			struct stat st;
+			while (!::stat(tmp_zip_file.c_str(), &st))
+			{
+				tmp_zip_file += ".0";
+			}
+			archive_directory(resolved, tmp_zip_file);
+			if (!::stat(argv[3], &st))
+			{
+				std::cout << "File " << argv[3] << " will be overwritten. Do you agree?(y/N)";
+				char y_n;
+				std::cin >> y_n;
+				if (y_n == 'Y' || y_n == 'y')
+				{
+					std::cout << "removing...\n";
+				}
+				else
+				{
+					std::cout << "exiting...\n";
+					exit(0);
+				}
+			}
+			remove_file(argv[3]);
+		}
+		else
+		{
+			tmp_zip_file = resolved;
+		}
 		xor_crypt(tmp_zip_file, argv[3], argv[4]);
 		remove(tmp_zip_file.c_str());
 	}
-	else if ((!strcmp(argv[1], "decrypt") || !strcmp(argv[1], "d")))
+	else if ((!strcmp(argv[1], "decrypt") || !strcmp(argv[1], "d")) && argc == 5)
 	{
 		remove_file(argv[3]);
 		xor_crypt(argv[2], argv[3], argv[4]);
@@ -177,6 +264,8 @@ int main(int argc, char** argv)
 	{
 		help(stdout, argv[0]);
 	}
+	
+	default_();
 	
 	return 0;
 }

@@ -243,6 +243,7 @@ int main(int argc, char** argv)
 				else
 				{
 					std::cout << "\nexiting...\n";
+					remove(tmp_zip_file.c_str());
 					exit(0);
 				}
 			}

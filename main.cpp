@@ -238,11 +238,11 @@ int main(int argc, char** argv)
 				std::cin >> y_n;
 				if (y_n == 'Y' || y_n == 'y')
 				{
-					std::cout << "removing...\n";
+					std::cout << "\nremoving...\n";
 				}
 				else
 				{
-					std::cout << "exiting...\n";
+					std::cout << "\nexiting...\n";
 					exit(0);
 				}
 			}

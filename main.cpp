@@ -215,15 +215,15 @@ int main(int argc, char** argv)
 	
 	if ((!strcmp(argv[1], "encrypt") || !strcmp(argv[1], "e")) && argc == 5)
 	{
-		std::string tmp_zip_file;
 		char* resolved = ::realpath(argv[2], nullptr);
 		if (resolved == nullptr)
 		{
 			error("Can not access file " + std::string(argv[2]) + ". Maybe it does not exists.");
 		}
+		
 		if (is_dir(resolved))
 		{
-			tmp_zip_file = argv[3];
+			std::string tmp_zip_file(argv[3]);
 			tmp_zip_file += ".0";
 			struct stat st;
 			while (!::stat(tmp_zip_file.c_str(), &st))
@@ -247,13 +247,13 @@ int main(int argc, char** argv)
 				}
 			}
 			remove_file(argv[3]);
+			xor_crypt(tmp_zip_file, argv[3], argv[4]);
+			remove(tmp_zip_file.c_str());
 		}
 		else
 		{
-			tmp_zip_file = resolved;
+			xor_crypt(resolved, argv[3], argv[4]);
 		}
-		xor_crypt(tmp_zip_file, argv[3], argv[4]);
-		remove(tmp_zip_file.c_str());
 	}
 	else if ((!strcmp(argv[1], "decrypt") || !strcmp(argv[1], "d")) && argc == 5)
 	{

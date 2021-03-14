@@ -1,11 +1,14 @@
 #include <iostream>
+#include <thread>
 #include <zip.h>
 #include <string>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <cstring>
 #include <termios.h>
-#include <unistd.h>
+
+#define RETURN_TO_BEGIN_OF_PREV_LINE "\033[F"
+#define RETURN_TO_PREV_LINE "\033[A"
 
 struct termios* stdin_defaults = nullptr;
 struct termios* stdout_defaults = nullptr;
@@ -260,6 +263,79 @@ int main(int argc, char** argv)
 	{
 		remove_file(argv[3]);
 		xor_crypt(argv[2], argv[3], argv[4]);
+	}
+	else if ((!strcmp(argv[1], "--info") || !strcmp(argv[1], "-i")) && argc == 2)
+	{
+		std::cout << "[                                  ]\n";
+		std::cout << "Program xor_crypto is xor encryptor.\n"
+					 "Operation XOR works in such way:\n"
+					 "+-------+-------+------+\n"
+					 "|input 1|input 2|output|\n"
+					 "+-------+-------+------+\n"
+					 "|   0   |   0   |  0   |\n"
+					 "+-------+-------+------+\n"
+					 "|   0   |   1   |  1   |\n"
+					 "+-------+-------+------+\n"
+					 "|   1   |   0   |  1   |\n"
+					 "+-------+-------+------+\n"
+					 "|   1   |   1   |  1   |\n"
+					 "+-------+-------+------+\n"
+					 "\n"
+					 "It means if we got two similar bits as input we produce 0, otherwise - 1.\n"
+					 "For example:\n"
+					 "1001 XOR 1001 = 0000\n"
+					 "1011 XOR 0111 = 1100\n"
+					 "\n"
+					 "It's interesting that if we know any two numbers we can obtain third.\n"
+					 "For example:\n"
+					 "1001 XOR 1010 = 0011\n"
+					 "   a        b      c\n"
+					 "\n"
+					 "1001 XOR 0011 = 1010\n"
+					 "   a        c      b\n"
+					 "\n"
+					 "0011 XOR 1010 = 1001\n"
+					 "   c        b      a\n"
+					 "\n"
+					 "It means if we want to encrypt some data we can XOR our data with some secret number called password.\n"
+					 "To decrypt our data we must have two of three numbers: our data (encrypted or original) and password.\n"
+					 "We always store only one of them - data (encrypted or original), password we memorize.";
+		std::cout.flush();
+		
+		for (int i = 0; i < 34; ++i)
+		{
+			std::cout << RETURN_TO_BEGIN_OF_PREV_LINE;
+		}
+		
+		std::cout.flush();
+		
+		int progress = 0;
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "EndlessLoop"
+		while (true)
+		{
+			std::cout << '[';
+			for (int i = 0; i < 34; ++i)
+			{
+				if (i < progress)
+				{
+					std::cout << '=';
+				}
+				else
+				{
+					std::cout << ' ';
+				}
+			}
+			std::cout << "]\r";// 34
+			std::cout.flush();
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			++progress;
+			if (progress > 34)
+			{
+				progress = 0;
+			}
+		}
+#pragma clang diagnostic pop
 	}
 	else
 	{

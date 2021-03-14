@@ -6,6 +6,8 @@
 #include <dirent.h>
 #include <cstring>
 #include <termios.h>
+#include <sys/ioctl.h>
+#include <cmath>
 
 #define RETURN_TO_BEGIN_OF_PREV_LINE "\033[F"
 #define RETURN_TO_PREV_LINE "\033[A"
@@ -189,10 +191,30 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 		}
 		
 		::fwrite(buffer, sizeof(char), read, output_f);
-		
-		std::cout << "Encrypting: " << (double)progress * 100.0 / (double)file_size << "%\r"; // 11 + (1 -> 3) + 2 = 14 -> 16
+		double perc = (double)progress * 100.0 / (double)file_size;
+		std::cout << "Encrypting: " << perc << "%\n"; // 11 + (1 -> 3) + 2 = 14 -> 16
+		struct winsize sz;
+		ioctl(stdout->_fileno, TIOCGWINSZ, &sz);
+		size_t size = sz.ws_col;
+		-- --size;
+		std::cout.flush();
+		std::cout << "[";
+		size_t part = std::round(perc * (double)size / 100.0);
+		for (int i = 0; i < size; ++i)
+		{
+			if (i < part)
+			{
+				std::cout << '=';
+			}
+			else
+			{
+				std::cout << ' ';
+			}
+		}
+		std::cout << "]" RETURN_TO_BEGIN_OF_PREV_LINE;
+		std::cout.flush();
 	}
-	std::cout << "\n";
+	std::cout << "\n\n";
 	fclose(input_f);
 	fclose(output_f);
 }

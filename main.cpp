@@ -278,11 +278,44 @@ int main(int argc, char** argv)
 		}
 		else
 		{
+			struct stat st;
+			if (!::stat(argv[3], &st))
+			{
+				std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N)";
+				char y_n;
+				std::cin >> y_n;
+				if (y_n == 'Y' || y_n == 'y')
+				{
+					std::cout << "\nremoving...\n";
+				}
+				else
+				{
+					std::cout << "\nexiting...\n";
+					exit(0);
+				}
+			}
+			remove_file(argv[3]);
 			xor_crypt(resolved, argv[3], argv[4]);
 		}
 	}
 	else if ((!strcmp(argv[1], "decrypt") || !strcmp(argv[1], "d")) && argc == 5)
 	{
+		struct stat st;
+		if (!::stat(argv[3], &st))
+		{
+			std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N)";
+			char y_n;
+			std::cin >> y_n;
+			if (y_n == 'Y' || y_n == 'y')
+			{
+				std::cout << "\nremoving...\n";
+			}
+			else
+			{
+				std::cout << "\nexiting...\n";
+				exit(0);
+			}
+		}
 		remove_file(argv[3]);
 		xor_crypt(argv[2], argv[3], argv[4]);
 	}

@@ -142,8 +142,9 @@ static void help(FILE* output_stream, const char* appname)
 {
 	fprintf(
 			output_stream,
-			"Usage:\t%s (encrypt / e) <input_path> <encrypted_filename> <password>\n or\n"
-			"      \t%s (decrypt / d) <input_filename> <output_filename> <password>",
+			"Usage: %s (encrypt / e) <input_path> <encrypted_filename> <password>\n"
+			"                                                                               or\n"
+			"       %s (decrypt / d) <input_filename> <output_filename> <password>",
 			appname, appname
 	);
 	exit(0);

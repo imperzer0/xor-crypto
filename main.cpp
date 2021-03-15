@@ -259,16 +259,15 @@ int main(int argc, char** argv)
 			archive_directory(resolved, tmp_zip_file);
 			if (!::stat(argv[3], &st))
 			{
-				std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N)";
-				char y_n;
-				std::cin >> y_n;
+				std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N): ";
+				char y_n = std::cin.get();
 				if (y_n == 'Y' || y_n == 'y')
 				{
-					std::cout << "\nremoving...\n";
+					std::cout << "y\nremoving...\n";
 				}
 				else
 				{
-					std::cout << "\nexiting...\n";
+					std::cout << "N\nexiting...\n";
 					remove(tmp_zip_file.c_str());
 					exit(0);
 				}
@@ -282,16 +281,15 @@ int main(int argc, char** argv)
 			struct stat st;
 			if (!::stat(argv[3], &st))
 			{
-				std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N)";
-				char y_n;
-				std::cin >> y_n;
+				std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N): ";
+				char y_n = std::cin.get();
 				if (y_n == 'Y' || y_n == 'y')
 				{
-					std::cout << "\nremoving...\n";
+					std::cout << "y\nremoving...\n";
 				}
 				else
 				{
-					std::cout << "\nexiting...\n";
+					std::cout << "N\nexiting...\n";
 					exit(0);
 				}
 			}
@@ -304,16 +302,15 @@ int main(int argc, char** argv)
 		struct stat st;
 		if (!::stat(argv[3], &st))
 		{
-			std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N)";
-			char y_n;
-			std::cin >> y_n;
+			std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N): ";
+			char y_n = std::cin.get();
 			if (y_n == 'Y' || y_n == 'y')
 			{
-				std::cout << "\nremoving...\n";
+				std::cout << "y\nremoving...\n";
 			}
 			else
 			{
-				std::cout << "\nexiting...\n";
+				std::cout << "N\nexiting...\n";
 				exit(0);
 			}
 		}
@@ -322,8 +319,8 @@ int main(int argc, char** argv)
 	}
 	else if ((!strcmp(argv[1], "--info") || !strcmp(argv[1], "-i")) && argc == 2)
 	{
-		std::cout << "[                                  ]\n";
-		std::cout << "Program xor_crypto is xor encryptor.\n"
+		std::cout << "[]\n"
+					 "Program xor_crypto is xor encryptor.\n"
 					 "Operation XOR works in such way:\n"
 					 "+-------+-------+------+\n"
 					 "|input 1|input 2|output|\n"
@@ -358,7 +355,7 @@ int main(int argc, char** argv)
 					 "We always store only one of them - data (encrypted or original), password we memorize.";
 		std::cout.flush();
 		
-		for (int i = 0; i < 34; ++i)
+		for (int i = 0; i < 33; ++i)
 		{
 			std::cout << RETURN_TO_BEGIN_OF_PREV_LINE;
 		}
@@ -370,8 +367,12 @@ int main(int argc, char** argv)
 #pragma ide diagnostic ignored "EndlessLoop"
 		while (true)
 		{
+			struct winsize wsz;
+			ioctl(stdout->_fileno, TIOCGWINSZ, &wsz);
+			size_t sz = wsz.ws_col;
+			----sz;
 			std::cout << '[';
-			for (int i = 0; i < 34; ++i)
+			for (int i = 0; i < sz; ++i)
 			{
 				if (i < progress)
 				{
@@ -386,7 +387,7 @@ int main(int argc, char** argv)
 			std::cout.flush();
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			++progress;
-			if (progress > 34)
+			if (progress > sz)
 			{
 				progress = 0;
 			}

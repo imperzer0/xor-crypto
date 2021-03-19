@@ -319,7 +319,7 @@ int main(int argc, char** argv)
 	}
 	else if ((!strcmp(argv[1], "--info") || !strcmp(argv[1], "-i")) && argc == 2)
 	{
-		std::cout << "[]\n"
+		std::cout << "< to enable fake progress bar press 'c' >\n"
 					 "|  <1> | Program xor_crypto is xor encryptor.\n"
 					 "|  <2> | Operation XOR works in such way:\n"
 					 "|  <3> | +-------+-------+------+\n"
@@ -355,6 +355,9 @@ int main(int argc, char** argv)
 					 "| <33> | We always store only one of them - data (encrypted or original), password we memorize.";
 		std::cout.flush();
 		
+		while (std::cin.get() != 'c')
+		{ }
+		
 		for (int i = 0; i < 33; ++i)
 		{
 			std::cout << RETURN_TO_BEGIN_OF_PREV_LINE;
@@ -370,7 +373,7 @@ int main(int argc, char** argv)
 			struct winsize wsz;
 			ioctl(stdout->_fileno, TIOCGWINSZ, &wsz);
 			size_t sz = wsz.ws_col;
-			----sz;
+			-- --sz;
 			std::cout << '[';
 			for (int i = 0; i < sz; ++i)
 			{

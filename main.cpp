@@ -153,7 +153,9 @@ static void help(FILE* output_stream, const char* appname)
 
 void draw_progress_bar(const std::string& label, double progress)
 {
-	std::cout << label;
+	std::cout << std::fixed;
+	std::cout.precision(2);
+	std::cout << label << " ";
 	if (std::round(progress * 100) / 100.0 < 10.0)
 	{
 		std::cout << " ";
@@ -162,11 +164,11 @@ void draw_progress_bar(const std::string& label, double progress)
 	{
 		std::cout << " ";
 	}
-	std::cout << progress << "% "; // 2 + (4 -> 6) = (6 -> 8)
+	std::cout << progress << "% "; // 3 + (4 -> 6) = (7 -> 9)
 	struct winsize sz;
 	ioctl(stdout->_fileno, TIOCGWINSZ, &sz);
 	size_t size = sz.ws_col;
-	size -= label.size() + 10; // 2 + 8 = 10
+	size -= label.size() + 11; // 2 + 9 = 11
 	std::cout.flush();
 	std::cout << "[";
 	size_t part = std::lround(progress * (double)size / 100.0);
@@ -199,8 +201,6 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 	unsigned char buffer[BUFFER_SIZE];
 	int password_iter = 0;
 	size_t read, progress = 0, file_size = st.st_size;
-	std::cout << std::fixed;
-	std::cout.precision(2);
 	while (!::feof(input_f))
 	{
 		::bzero(buffer, BUFFER_SIZE);
@@ -228,7 +228,7 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 		
 		::fwrite(buffer, sizeof(char), read, output_f);
 		double perc = (double)((long double)progress * 100.0 / (long double)file_size);
-		draw_progress_bar("Encrypting: ", perc);
+		draw_progress_bar("Encrypting:", perc);
 	}
 	std::cout << "\n";
 	fclose(input_f);
@@ -380,34 +380,17 @@ int main(int argc, char** argv)
 		
 		std::cout.flush();
 		
-		int progress = 0;
+		double progress = 0;
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
 		while (true)
 		{
-			struct winsize wsz;
-			ioctl(stdout->_fileno, TIOCGWINSZ, &wsz);
-			size_t sz = wsz.ws_col;
-			-- --sz;
-			std::cout << '[';
-			for (int i = 0; i < sz; ++i)
-			{
-				if (i < progress)
-				{
-					std::cout << '=';
-				}
-				else
-				{
-					std::cout << ' ';
-				}
-			}
-			std::cout << "]\r";// 34
-			std::cout.flush();
+			draw_progress_bar("Test progress bar:", progress);
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-			++progress;
-			if (progress > sz)
+			progress += 0.1;
+			if (progress > 100.0)
 			{
-				progress = 0;
+				progress = 0.0;
 			}
 		}
 #pragma clang diagnostic pop

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <thread>
 #include <zip.h>
 #include <string>
@@ -150,6 +151,40 @@ static void help(FILE* output_stream, const char* appname)
 	exit(0);
 }
 
+void draw_progress_bar(const std::string& label, double progress)
+{
+	std::cout << label;
+	if (std::round(progress * 100) / 100.0 < 10.0)
+	{
+		std::cout << " ";
+	}
+	if (std::round(progress * 100) / 100.0 < 100.0)
+	{
+		std::cout << " ";
+	}
+	std::cout << progress << "% "; // 2 + (4 -> 6) = (6 -> 8)
+	struct winsize sz;
+	ioctl(stdout->_fileno, TIOCGWINSZ, &sz);
+	size_t size = sz.ws_col;
+	size -= label.size() + 10; // 2 + 8 = 10
+	std::cout.flush();
+	std::cout << "[";
+	size_t part = std::lround(progress * (double)size / 100.0);
+	for (int i = 0; i < size; ++i)
+	{
+		if (i < part)
+		{
+			std::cout << '=';
+		}
+		else
+		{
+			std::cout << ' ';
+		}
+	}
+	std::cout << "]\r";
+	std::cout.flush();
+}
+
 #define BUFFER_SIZE 1024
 
 static void xor_crypt(const std::string& input_file, const std::string& output_file, const std::string& password)
@@ -192,30 +227,10 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 		}
 		
 		::fwrite(buffer, sizeof(char), read, output_f);
-		double perc = (double)progress * 100.0 / (double)file_size;
-		std::cout << "Encrypting: " << perc << "%\n"; // 11 + (1 -> 3) + 2 = 14 -> 16
-		struct winsize sz;
-		ioctl(stdout->_fileno, TIOCGWINSZ, &sz);
-		size_t size = sz.ws_col;
-		-- --size;
-		std::cout.flush();
-		std::cout << "[";
-		size_t part = std::round(perc * (double)size / 100.0);
-		for (int i = 0; i < size; ++i)
-		{
-			if (i < part)
-			{
-				std::cout << '=';
-			}
-			else
-			{
-				std::cout << ' ';
-			}
-		}
-		std::cout << "]" RETURN_TO_BEGIN_OF_PREV_LINE;
-		std::cout.flush();
+		double perc = (double)((long double)progress * 100.0 / (long double)file_size);
+		draw_progress_bar("Encrypting: ", perc);
 	}
-	std::cout << "\n\n";
+	std::cout << "\n";
 	fclose(input_f);
 	fclose(output_f);
 }

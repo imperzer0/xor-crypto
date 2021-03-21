@@ -74,6 +74,13 @@ static bool is_dir(const std::string& path)
 	return S_ISDIR(st.st_mode);
 }
 
+static bool is_file_or_block(const std::string& path)
+{
+	struct stat st;
+	::stat(path.c_str(), &st);
+	return S_ISREG(st.st_mode) || S_ISBLK(st.st_mode);
+}
+
 static void walk_though_directory(const std::string& start_path, const std::string& input_path, zip_t* zipper)
 {
 	DIR* dir = ::opendir(input_path.c_str());
@@ -291,7 +298,7 @@ int main(int argc, char** argv)
 			xor_crypt(tmp_zip_file, argv[3], argv[4]);
 			remove(tmp_zip_file.c_str());
 		}
-		else
+		else if (is_file_or_block(resolved))
 		{
 			struct stat st;
 			if (!::stat(argv[3], &st))
@@ -310,6 +317,10 @@ int main(int argc, char** argv)
 			}
 			remove_file(argv[3]);
 			xor_crypt(resolved, argv[3], argv[4]);
+		}
+		else
+		{
+			std::cout << "specified path: " << resolved << " is not file, block device or directory\n";
 		}
 	}
 	else if ((!strcmp(argv[1], "decrypt") || !strcmp(argv[1], "d")) && argc == 5)

@@ -17,11 +17,11 @@ prepare() {
 
 build() {
 	cd "$pkgname"
-	./configure --prefix=/usr
-	cmake --build . -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ .
+	make
 }
 
 package() {
-	cd "$pkgname/cmake-build-release/"
-	install -Dm755 ./xor_crypto "$pkgdir/usr/bin/xor-crypto"
+	cd "$pkgname"
+	install -Dm755 ./xor_crypto "$pkgdir/usr/bin/$pkgname"
 }

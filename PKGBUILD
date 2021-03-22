@@ -1,6 +1,6 @@
 pkgname="xor-crypto"
-pkgver=2
-pkgrel=1
+pkgver=0
+pkgrel=2
 epoch=1
 pkgdesc="xor encryptor program"
 arch=("x86_64")

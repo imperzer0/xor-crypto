@@ -1,5 +1,5 @@
 pkgname="xor-crypto"
-pkgver=2.0.0
+pkgver=2
 pkgrel=1
 epoch=1
 pkgdesc="xor encryptor program"

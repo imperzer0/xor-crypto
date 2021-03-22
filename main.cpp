@@ -9,6 +9,7 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <cmath>
+#include <map>
 
 #define RETURN_TO_BEGIN_OF_PREV_LINE "\033[F"
 #define RETURN_TO_PREV_LINE "\033[A"
@@ -150,10 +151,12 @@ static void help(FILE* output_stream, const char* appname)
 {
 	fprintf(
 			output_stream,
-			"Usage: %s (encrypt / e) <input_path> <encrypted_filename> <password>\n"
-			"                                                                               or\n"
-			"       %s (decrypt / d) <input_filename> <output_filename> <password>",
-			appname, appname
+			"Usage: %s --action=(encrypt / e) --input=<input_path> --output=<encrypted_filename> --passwd=<password>\n"
+			"                                                                                                        or\n"
+			"       %s --action=(decrypt / d) --input=<input_filename> --output=<output_filename> --passwd=<password>\n"
+			"                                                                                                        or\n"
+			"       %s --action=info",
+			appname, appname, appname
 	);
 	exit(0);
 }
@@ -251,6 +254,30 @@ static void remove_file(const char* name)
 	}
 }
 
+std::map<std::string, std::string>& parse_args(int argc, char** const& argv)
+{
+	auto result = new std::map<std::string, std::string>();
+	for (int i = 1; i < argc; ++i)
+	{
+		std::string arg(argv[i]);
+		std::string::size_type pos = arg.find('=');
+		if (pos != std::string::npos)
+		{
+			result->insert({arg.substr(0, pos), arg.substr(++pos, arg.size() - pos)});
+		}
+		else
+		{
+			help(stdout, argv[0]);
+		}
+	}
+	return *result;
+}
+
+void promt()
+{
+
+}
+
 int main(int argc, char** argv)
 {
 	setting1();
@@ -261,17 +288,37 @@ int main(int argc, char** argv)
 		help(stdout, argv[0]);
 	}
 	
-	if ((!strcmp(argv[1], "encrypt") || !strcmp(argv[1], "e")) && argc == 5)
+	auto parsed_args = parse_args(argc, argv);
+	
+	auto pos = parsed_args.find("--action");
+	if (pos == parsed_args.end())
 	{
-		char* resolved = ::realpath(argv[2], nullptr);
+		help(stdout, argv[0]);
+	}
+	std::string action = pos->second;
+	
+	if ((action == "encrypt" || action == "e") && argc == 5)
+	{
+		pos = parsed_args.find("--input");
+		auto pos2 = parsed_args.find("--output");
+		auto pos3 = parsed_args.find("--passwd");
+		
+		if (pos == parsed_args.end() || pos2 == parsed_args.end() || pos3 == parsed_args.end())
+		{
+			help(stdout, argv[0]);
+		}
+		
+		std::string input = pos->second, output = pos2->second, passwd = pos3->second;
+		
+		char* resolved = ::realpath(input.c_str(), nullptr);
 		if (resolved == nullptr)
 		{
-			error("Can not access file " + std::string(argv[2]) + ". Maybe it does not exists.");
+			error("Can not access file " + input + ". Maybe it does not exists.");
 		}
 		
 		if (is_dir(resolved))
 		{
-			std::string tmp_zip_file(argv[3]);
+			std::string tmp_zip_file(output);
 			tmp_zip_file += ".0";
 			struct stat st;
 			while (!::stat(tmp_zip_file.c_str(), &st))
@@ -279,9 +326,9 @@ int main(int argc, char** argv)
 				tmp_zip_file += ".0";
 			}
 			archive_directory(resolved, tmp_zip_file);
-			if (!::stat(argv[3], &st))
+			if (!::stat(output.c_str(), &st))
 			{
-				std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N): ";
+				std::cout << "File \"" << output << "\" will be overwritten. Do you agree?(y/N): ";
 				char y_n = std::cin.get();
 				if (y_n == 'Y' || y_n == 'y')
 				{
@@ -294,16 +341,16 @@ int main(int argc, char** argv)
 					exit(0);
 				}
 			}
-			remove_file(argv[3]);
-			xor_crypt(tmp_zip_file, argv[3], argv[4]);
+			remove_file(output.c_str());
+			xor_crypt(tmp_zip_file, output, passwd);
 			remove(tmp_zip_file.c_str());
 		}
 		else if (is_file_or_block(resolved))
 		{
 			struct stat st;
-			if (!::stat(argv[3], &st))
+			if (!::stat(output.c_str(), &st))
 			{
-				std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N): ";
+				std::cout << "File \"" << output << "\" will be overwritten. Do you agree?(y/N): ";
 				char y_n = std::cin.get();
 				if (y_n == 'Y' || y_n == 'y')
 				{
@@ -315,20 +362,39 @@ int main(int argc, char** argv)
 					exit(0);
 				}
 			}
-			remove_file(argv[3]);
-			xor_crypt(resolved, argv[3], argv[4]);
+			remove_file(output.c_str());
+			xor_crypt(resolved, output, passwd);
 		}
 		else
 		{
 			std::cout << "specified path: " << resolved << " is not file, block device or directory\n";
 		}
 	}
-	else if ((!strcmp(argv[1], "decrypt") || !strcmp(argv[1], "d")) && argc == 5)
+	else if ((action == "decrypt" || action == "d") && argc == 5)
 	{
-		struct stat st;
-		if (!::stat(argv[3], &st))
+		pos = parsed_args.find("--input");
+		auto pos2 = parsed_args.find("--output");
+		auto pos3 = parsed_args.find("--passwd");
+		
+		if (pos == parsed_args.end() || pos2 == parsed_args.end() || pos3 == parsed_args.end())
 		{
-			std::cout << "File \"" << argv[3] << "\" will be overwritten. Do you agree?(y/N): ";
+			help(stdout, argv[0]);
+		}
+		
+		std::string input = pos->second, output = pos2->second, passwd = pos3->second;
+		
+		char* resolved_input = ::realpath(input.c_str(), nullptr);
+		
+		if (!is_file_or_block(resolved_input))
+		{
+			std::cout << "Error. File " << resolved_input << " is not block device or regular file.\n";
+			return 0;
+		}
+		
+		struct stat st;
+		if (!::stat(output.c_str(), &st))
+		{
+			std::cout << "File \"" << output << "\" will be overwritten. Do you agree?(y/N): ";
 			char y_n = std::cin.get();
 			if (y_n == 'Y' || y_n == 'y')
 			{
@@ -340,10 +406,10 @@ int main(int argc, char** argv)
 				exit(0);
 			}
 		}
-		remove_file(argv[3]);
-		xor_crypt(argv[2], argv[3], argv[4]);
+		remove_file(output.c_str());
+		xor_crypt(resolved_input, output, passwd);
 	}
-	else if ((!strcmp(argv[1], "--info") || !strcmp(argv[1], "-i")) && argc == 2)
+	else if ((action == "info" || action == "i") && argc == 2)
 	{
 		std::cout << "< to enable fake progress bar press 'c' >\n"
 					 "|  <1> | Program xor_crypto is xor encryptor.\n"

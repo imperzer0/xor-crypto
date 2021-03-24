@@ -381,16 +381,20 @@ int main(int argc, char** argv)
 			passwd = pos3->second;
 		}
 		
-		char* resolved_input = ::realpath(input.c_str(), nullptr);
+		const char* resolved_input = ::realpath(input.c_str(), nullptr);
 		if (resolved_input == nullptr)
 		{
 			error("Can not access file " + input + ". Maybe it does not exists.");
 		}
 		
-		char* resolved_passwd = ::realpath(passwd.c_str(), nullptr);
-		if (resolved_passwd == nullptr)
+		const char* resolved_passwd;
+		if (pos4 != parsed_args.end())
 		{
-			error("Can not access file " + passwd + ". Maybe it does not exists.");
+			resolved_passwd = ::realpath(passwd.c_str(), nullptr);
+			if (resolved_passwd == nullptr)
+			{
+				error("Can not access file " + passwd + ". Maybe it does not exists.");
+			}
 		}
 		
 		if (is_dir(resolved_input))
@@ -449,7 +453,7 @@ int main(int argc, char** argv)
 			remove_file(output.c_str());
 			if (pos4 == parsed_args.end())
 			{
-				xor_crypt(resolved_input, output, resolved_passwd);
+				xor_crypt(resolved_input, output, passwd);
 			}
 			else
 			{
@@ -485,16 +489,20 @@ int main(int argc, char** argv)
 			passwd = pos3->second;
 		}
 		
-		char* resolved_input = ::realpath(input.c_str(), nullptr);
+		const char* resolved_input = ::realpath(input.c_str(), nullptr);
 		if (resolved_input == nullptr)
 		{
 			error("Can not access file " + input + ". Maybe it does not exists.");
 		}
 		
-		char* resolved_passwd = ::realpath(passwd.c_str(), nullptr);
-		if (resolved_passwd == nullptr)
+		const char* resolved_passwd;
+		if (pos4 != parsed_args.end())
 		{
-			error("Can not access file " + passwd + ". Maybe it does not exists.");
+			resolved_passwd = ::realpath(passwd.c_str(), nullptr);
+			if (resolved_passwd == nullptr)
+			{
+				error("Can not access file " + passwd + ". Maybe it does not exists.");
+			}
 		}
 		
 		if (!is_file_or_block(resolved_input))
@@ -521,7 +529,7 @@ int main(int argc, char** argv)
 		remove_file(output.c_str());
 		if (pos4 == parsed_args.end())
 		{
-			xor_crypt(resolved_input, output, resolved_passwd);
+			xor_crypt(resolved_input, output, passwd);
 		}
 		else
 		{

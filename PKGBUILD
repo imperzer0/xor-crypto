@@ -1,7 +1,7 @@
 pkgname="xor-crypto"
-pkgver=1.0
+epoch=2
+pkgver=0
 pkgrel=1
-epoch=1
 pkgdesc="xor encryptor program"
 arch=("x86_64")
 url="https://github.com/Imper927/xor_crypto"

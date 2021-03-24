@@ -151,9 +151,9 @@ static void help(FILE* output_stream, const char* appname)
 {
 	fprintf(
 			output_stream,
-			"Usage: %s --action=(encrypt / e) --input=<input_path> --output=<encrypted_filename> --passwd=<password>\n"
+			"Usage: %s --action=(encrypt / e) --input=<input_path> --output=<encrypted_filename> (--passwd=<password> / --passwd-file=<password-file>)\n"
 			"                                                                                                        or\n"
-			"       %s --action=(decrypt / d) --input=<input_filename> --output=<output_filename> --passwd=<password>\n"
+			"       %s --action=(decrypt / d) --input=<input_filename> --output=<output_filename> (--passwd=<password> / --passwd-file=<password-file>)\n"
 			"                                                                                                        or\n"
 			"       %s --action=info",
 			appname, appname, appname
@@ -245,6 +245,71 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 	fclose(output_f);
 }
 
+static void xor_crypt_with_password_file(const std::string& input_file, const std::string& output_file, const std::string& password_file)
+{
+	struct stat st;
+	if (stat(input_file.c_str(), &st))
+	{
+		error("Could not open file " + input_file + ". " + ::strerror(errno));
+	}
+	FILE* input_f = ::fopen(input_file.c_str(), "rb");
+	FILE* output_f = ::fopen(output_file.c_str(), "wb");
+	FILE* passwd_f = ::fopen(password_file.c_str(), "rb");
+	unsigned char buffer[BUFFER_SIZE];
+	int password_iter = 0;
+	size_t read, read_passwd = 0, progress = 0, file_size = st.st_size;
+	::stat(password_file.c_str(), &st);
+	char password[BUFFER_SIZE];
+	while (!::feof(input_f))
+	{
+		::bzero(buffer, BUFFER_SIZE);
+		read = ::fread(buffer, sizeof(char), BUFFER_SIZE, input_f);
+		if (!read || read > BUFFER_SIZE)
+		{
+			::fclose(input_f);
+			::fclose(output_f);
+			::fclose(passwd_f);
+			error("Failed to read bytes from file \"" + input_file + "\".");
+		}
+		
+		progress += read;
+		
+		for (int i = 0; i < read; ++i)
+		{
+			if (!(password_iter % BUFFER_SIZE) && !::feof(passwd_f))
+			{
+				::bzero(password, BUFFER_SIZE);
+				read_passwd = ::fread(password, sizeof(char), BUFFER_SIZE, passwd_f);
+				if (!read_passwd || read_passwd > BUFFER_SIZE)
+				{
+					::fclose(input_f);
+					::fclose(output_f);
+					::fclose(passwd_f);
+					error("Failed to read bytes from file \"" + password_file + "\".");
+				}
+			}
+			else if ((password_iter % BUFFER_SIZE == read_passwd || !(password_iter % BUFFER_SIZE)) && ::feof(passwd_f))
+			{
+				::fseek(passwd_f, 0, SEEK_SET);
+				::bzero(password, BUFFER_SIZE);
+				read_passwd = ::fread(password, sizeof(char), BUFFER_SIZE, passwd_f);
+				password_iter = 0;
+			}
+			
+			buffer[i] ^= password[password_iter % BUFFER_SIZE];
+			
+			++password_iter;
+		}
+		
+		::fwrite(buffer, sizeof(char), read, output_f);
+		double perc = (double)((long double)progress * 100.0 / (long double)file_size);
+		draw_progress_bar("Encrypting:", perc);
+	}
+	std::cout << "\n";
+	fclose(input_f);
+	fclose(output_f);
+}
+
 static void remove_file(const char* name)
 {
 	errno = 0;
@@ -273,11 +338,6 @@ std::map<std::string, std::string>& parse_args(int argc, char** const& argv)
 	return *result;
 }
 
-void promt()
-{
-
-}
-
 int main(int argc, char** argv)
 {
 	setting1();
@@ -302,21 +362,38 @@ int main(int argc, char** argv)
 		pos = parsed_args.find("--input");
 		auto pos2 = parsed_args.find("--output");
 		auto pos3 = parsed_args.find("--passwd");
+		auto pos4 = parsed_args.find("--passwd-file");
 		
-		if (pos == parsed_args.end() || pos2 == parsed_args.end() || pos3 == parsed_args.end())
+		if (pos == parsed_args.end() || pos2 == parsed_args.end() ||
+			(pos3 == parsed_args.end() && pos4 == parsed_args.end()) || (pos3 != parsed_args.end() && pos4 != parsed_args.end()))
 		{
 			help(stdout, argv[0]);
 		}
 		
-		std::string input = pos->second, output = pos2->second, passwd = pos3->second;
+		std::string input(pos->second), output(pos2->second), passwd;
 		
-		char* resolved = ::realpath(input.c_str(), nullptr);
-		if (resolved == nullptr)
+		if (pos3 == parsed_args.end())
+		{
+			passwd = pos4->second;
+		}
+		else
+		{
+			passwd = pos3->second;
+		}
+		
+		char* resolved_input = ::realpath(input.c_str(), nullptr);
+		if (resolved_input == nullptr)
 		{
 			error("Can not access file " + input + ". Maybe it does not exists.");
 		}
 		
-		if (is_dir(resolved))
+		char* resolved_passwd = ::realpath(passwd.c_str(), nullptr);
+		if (resolved_passwd == nullptr)
+		{
+			error("Can not access file " + passwd + ". Maybe it does not exists.");
+		}
+		
+		if (is_dir(resolved_input))
 		{
 			std::string tmp_zip_file(output);
 			tmp_zip_file += ".0";
@@ -325,7 +402,7 @@ int main(int argc, char** argv)
 			{
 				tmp_zip_file += ".0";
 			}
-			archive_directory(resolved, tmp_zip_file);
+			archive_directory(resolved_input, tmp_zip_file);
 			if (!::stat(output.c_str(), &st))
 			{
 				std::cout << "File \"" << output << "\" will be overwritten. Do you agree?(y/N): ";
@@ -342,10 +419,17 @@ int main(int argc, char** argv)
 				}
 			}
 			remove_file(output.c_str());
-			xor_crypt(tmp_zip_file, output, passwd);
+			if (pos4 == parsed_args.end())
+			{
+				xor_crypt(tmp_zip_file, output, resolved_passwd);
+			}
+			else
+			{
+				xor_crypt_with_password_file(tmp_zip_file, output, resolved_passwd);
+			}
 			remove(tmp_zip_file.c_str());
 		}
-		else if (is_file_or_block(resolved))
+		else if (is_file_or_block(resolved_input))
 		{
 			struct stat st;
 			if (!::stat(output.c_str(), &st))
@@ -363,11 +447,18 @@ int main(int argc, char** argv)
 				}
 			}
 			remove_file(output.c_str());
-			xor_crypt(resolved, output, passwd);
+			if (pos4 == parsed_args.end())
+			{
+				xor_crypt(resolved_input, output, resolved_passwd);
+			}
+			else
+			{
+				xor_crypt_with_password_file(resolved_input, output, resolved_passwd);
+			}
 		}
 		else
 		{
-			std::cout << "specified path: " << resolved << " is not file, block device or directory\n";
+			std::cout << "specified path: " << resolved_input << " is not file, block device or directory\n";
 		}
 	}
 	else if ((action == "decrypt" || action == "d") && argc == 5)
@@ -375,15 +466,36 @@ int main(int argc, char** argv)
 		pos = parsed_args.find("--input");
 		auto pos2 = parsed_args.find("--output");
 		auto pos3 = parsed_args.find("--passwd");
+		auto pos4 = parsed_args.find("--passwd-file");
 		
-		if (pos == parsed_args.end() || pos2 == parsed_args.end() || pos3 == parsed_args.end())
+		if (pos == parsed_args.end() || pos2 == parsed_args.end() ||
+			(pos3 == parsed_args.end() && pos4 == parsed_args.end()) || (pos3 != parsed_args.end() && pos4 != parsed_args.end()))
 		{
 			help(stdout, argv[0]);
 		}
 		
-		std::string input = pos->second, output = pos2->second, passwd = pos3->second;
+		std::string input(pos->second), output(pos2->second), passwd;
+		
+		if (pos3 == parsed_args.end())
+		{
+			passwd = pos4->second;
+		}
+		else
+		{
+			passwd = pos3->second;
+		}
 		
 		char* resolved_input = ::realpath(input.c_str(), nullptr);
+		if (resolved_input == nullptr)
+		{
+			error("Can not access file " + input + ". Maybe it does not exists.");
+		}
+		
+		char* resolved_passwd = ::realpath(passwd.c_str(), nullptr);
+		if (resolved_passwd == nullptr)
+		{
+			error("Can not access file " + passwd + ". Maybe it does not exists.");
+		}
 		
 		if (!is_file_or_block(resolved_input))
 		{
@@ -407,7 +519,14 @@ int main(int argc, char** argv)
 			}
 		}
 		remove_file(output.c_str());
-		xor_crypt(resolved_input, output, passwd);
+		if (pos4 == parsed_args.end())
+		{
+			xor_crypt(resolved_input, output, resolved_passwd);
+		}
+		else
+		{
+			xor_crypt_with_password_file(resolved_input, output, resolved_passwd);
+		}
 	}
 	else if ((action == "info" || action == "i") && argc == 2)
 	{

@@ -17,7 +17,7 @@
 struct termios* stdin_defaults = nullptr;
 struct termios* stdout_defaults = nullptr;
 
-void setting1()
+inline void setting1()
 {
 	if (stdin_defaults == nullptr)
 	{
@@ -32,7 +32,7 @@ void setting1()
 	::tcsetattr(0, TCSANOW, &settings);
 }
 
-void setting2()
+inline void setting2()
 {
 	if (stdout_defaults == nullptr)
 	{
@@ -47,7 +47,7 @@ void setting2()
 	::tcsetattr(1, TCSANOW, &settings);
 }
 
-void default_()
+inline void default_()
 {
 	if (stdin_defaults != nullptr)
 	{
@@ -62,20 +62,20 @@ void default_()
 	}
 }
 
-static void error(const std::string& error)
+inline static void error(const std::string& error)
 {
 	std::cerr << error << "\n";
 	throw std::runtime_error(error);
 }
 
-static bool is_dir(const std::string& path)
+inline static bool is_dir(const std::string& path)
 {
 	struct stat st;
 	::stat(path.c_str(), &st);
 	return S_ISDIR(st.st_mode);
 }
 
-static bool is_file_or_block(const std::string& path)
+inline static bool is_file_or_block(const std::string& path)
 {
 	struct stat st;
 	::stat(path.c_str(), &st);
@@ -147,7 +147,7 @@ static void archive_directory(const std::string& path, const std::string& out_fi
 	zip_close(zipper);
 }
 
-static void help(FILE* output_stream, const char* appname)
+inline static void help(FILE* output_stream, const char* appname)
 {
 	fprintf(
 			output_stream,
@@ -310,7 +310,7 @@ static void xor_crypt_with_password_file(const std::string& input_file, const st
 	fclose(output_f);
 }
 
-static void remove_file(const char* name)
+inline static void remove_file(const char* name)
 {
 	errno = 0;
 	if (::remove(name) && errno != ENOENT)
@@ -319,7 +319,7 @@ static void remove_file(const char* name)
 	}
 }
 
-std::map<std::string, std::string>& parse_args(int argc, char** const& argv)
+inline std::map<std::string, std::string>& parse_args(int argc, char** const& argv)
 {
 	auto result = new std::map<std::string, std::string>();
 	for (int i = 1; i < argc; ++i)
@@ -336,6 +336,27 @@ std::map<std::string, std::string>& parse_args(int argc, char** const& argv)
 		}
 	}
 	return *result;
+}
+
+typedef void (* cleanup_function)(void* args);
+
+inline void promt(std::string file, cleanup_function cleanup_func, void* args = nullptr)
+{
+	struct stat st;
+	if (!::stat(file.c_str(), &st))
+	{
+		std::cout << "File \"" << file << "\" will be overwritten. Do you agree?(y/N): ";
+		char y_n = std::cin.get();
+		if (y_n == 'Y' || y_n == 'y')
+		{
+			std::cout << "y\nremoving...\n";
+		}
+		else
+		{
+			std::cout << "N\nexiting...\n";
+			cleanup_func(args);
+		}
+	}
 }
 
 int main(int argc, char** argv)
@@ -365,7 +386,8 @@ int main(int argc, char** argv)
 		auto pos4 = parsed_args.find("--passwd-file");
 		
 		if (pos == parsed_args.end() || pos2 == parsed_args.end() ||
-			(pos3 == parsed_args.end() && pos4 == parsed_args.end()) || (pos3 != parsed_args.end() && pos4 != parsed_args.end()))
+			(pos3 == parsed_args.end() && pos4 == parsed_args.end()) ||
+			(pos3 != parsed_args.end() && pos4 != parsed_args.end()))
 		{
 			help(stdout, argv[0]);
 		}
@@ -409,18 +431,14 @@ int main(int argc, char** argv)
 			archive_directory(resolved_input, tmp_zip_file);
 			if (!::stat(output.c_str(), &st))
 			{
-				std::cout << "File \"" << output << "\" will be overwritten. Do you agree?(y/N): ";
-				char y_n = std::cin.get();
-				if (y_n == 'Y' || y_n == 'y')
-				{
-					std::cout << "y\nremoving...\n";
-				}
-				else
-				{
-					std::cout << "N\nexiting...\n";
-					remove(tmp_zip_file.c_str());
-					exit(0);
-				}
+				promt(
+						output, [](void* tmp_zip_file)
+						{
+							remove(((std::string*)tmp_zip_file)->c_str());
+							exit(0);
+						},
+						&tmp_zip_file
+				);
 			}
 			remove_file(output.c_str());
 			if (pos4 == parsed_args.end())
@@ -435,21 +453,10 @@ int main(int argc, char** argv)
 		}
 		else if (is_file_or_block(resolved_input))
 		{
-			struct stat st;
-			if (!::stat(output.c_str(), &st))
-			{
-				std::cout << "File \"" << output << "\" will be overwritten. Do you agree?(y/N): ";
-				char y_n = std::cin.get();
-				if (y_n == 'Y' || y_n == 'y')
-				{
-					std::cout << "y\nremoving...\n";
-				}
-				else
-				{
-					std::cout << "N\nexiting...\n";
-					exit(0);
-				}
-			}
+			promt(
+					output, [](void*)
+					{ exit(0); }
+			);
 			remove_file(output.c_str());
 			if (pos4 == parsed_args.end())
 			{
@@ -473,7 +480,8 @@ int main(int argc, char** argv)
 		auto pos4 = parsed_args.find("--passwd-file");
 		
 		if (pos == parsed_args.end() || pos2 == parsed_args.end() ||
-			(pos3 == parsed_args.end() && pos4 == parsed_args.end()) || (pos3 != parsed_args.end() && pos4 != parsed_args.end()))
+			(pos3 == parsed_args.end() && pos4 == parsed_args.end()) ||
+			(pos3 != parsed_args.end() && pos4 != parsed_args.end()))
 		{
 			help(stdout, argv[0]);
 		}
@@ -511,21 +519,10 @@ int main(int argc, char** argv)
 			return 0;
 		}
 		
-		struct stat st;
-		if (!::stat(output.c_str(), &st))
-		{
-			std::cout << "File \"" << output << "\" will be overwritten. Do you agree?(y/N): ";
-			char y_n = std::cin.get();
-			if (y_n == 'Y' || y_n == 'y')
-			{
-				std::cout << "y\nremoving...\n";
-			}
-			else
-			{
-				std::cout << "N\nexiting...\n";
-				exit(0);
-			}
-		}
+		promt(
+				output, [](void*)
+				{ exit(0); }
+		);
 		remove_file(output.c_str());
 		if (pos4 == parsed_args.end())
 		{

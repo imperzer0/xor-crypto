@@ -332,7 +332,7 @@ inline std::map<std::string, std::string>& parse_args(int argc, char** const& ar
 		}
 		else
 		{
-			help(stdout, argv[0]);
+			result->insert({arg, ""});
 		}
 	}
 	return *result;
@@ -372,7 +372,7 @@ int main(int argc, char** argv)
 	auto parsed_args = parse_args(argc, argv);
 	
 	auto pos = parsed_args.find("--action");
-	if (pos == parsed_args.end())
+	if (pos == parsed_args.end() || pos->second.empty())
 	{
 		help(stdout, argv[0]);
 	}
@@ -385,9 +385,10 @@ int main(int argc, char** argv)
 		auto pos3 = parsed_args.find("--passwd");
 		auto pos4 = parsed_args.find("--passwd-file");
 		
-		if (pos == parsed_args.end() || pos2 == parsed_args.end() ||
+		if (pos == parsed_args.end() || pos->second.empty() || pos2 == parsed_args.end() || pos2->second.empty() ||
 			(pos3 == parsed_args.end() && pos4 == parsed_args.end()) ||
-			(pos3 != parsed_args.end() && pos4 != parsed_args.end()))
+			(pos3 != parsed_args.end() && pos4 != parsed_args.end()) ||
+			(pos3->second.empty() && pos3->second.empty()) || (!pos3->second.empty() && !pos3->second.empty()))
 		{
 			help(stdout, argv[0]);
 		}
@@ -479,9 +480,10 @@ int main(int argc, char** argv)
 		auto pos3 = parsed_args.find("--passwd");
 		auto pos4 = parsed_args.find("--passwd-file");
 		
-		if (pos == parsed_args.end() || pos2 == parsed_args.end() ||
+		if (pos == parsed_args.end() || pos->second.empty() || pos2 == parsed_args.end() || pos2->second.empty() ||
 			(pos3 == parsed_args.end() && pos4 == parsed_args.end()) ||
-			(pos3 != parsed_args.end() && pos4 != parsed_args.end()))
+			(pos3 != parsed_args.end() && pos4 != parsed_args.end()) ||
+			(pos3->second.empty() && pos3->second.empty()) || (!pos3->second.empty() && !pos3->second.empty()))
 		{
 			help(stdout, argv[0]);
 		}

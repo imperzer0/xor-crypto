@@ -1,7 +1,7 @@
 pkgname="xor-crypto"
 epoch=2
 pkgver=2
-pkgrel=2
+pkgrel=3
 pkgdesc="xor encryptor program"
 arch=("x86_64")
 url="https://github.com/Imper927/xor_crypto"
@@ -24,6 +24,6 @@ build() {
 package() {
 	cd "$pkgname"
 	install -Dm755 ./xor_crypto "$pkgdir/usr/bin/$pkgname"
-	echo "executing $pkgname --action=install $pkgname"
-	sudo $pkgname --action=install $pkgname
+	echo "executing: $pkgname --action=install $pkgname ..."
+	$pkgname --action=install $pkgname
 }

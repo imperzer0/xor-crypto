@@ -12,6 +12,7 @@
 #include <map>
 #include <unistd.h>
 #include <sstream>
+#include <pwd.h>
 
 #define RETURN_TO_BEGIN_OF_PREV_LINE "\033[F"
 #define RETURN_TO_PREV_LINE "\033[A"
@@ -383,6 +384,8 @@ std::string& exec(const std::string& cmd)
 	return *result;
 }
 
+FILE* completions = nullptr;
+
 void set_completion(const char* appname, const char* arg, const char** parameters, size_t size, const char* description, const char* display_after = ""/*, const char* dont_mix_with = ""*/)
 {
 	std::string cmd("complete -c ");
@@ -432,36 +435,40 @@ void set_completion(const char* appname, const char* arg, const char** parameter
 	}
 	cmd += " -d \"";
 	cmd += description;
-	cmd += "\"";
+	cmd += "\"\n";
 	
-	FILE* file = ::fopen((std::string("/etc/fish/completions/") + appname + ".fish").c_str(), "wb");
-	if (file == nullptr)
+	if (completions == nullptr)
 	{
 		std::cerr << ::strerror(errno) << "\n";
 		exit(1);
 	}
-	fwrite(cmd.c_str(), 1, cmd.size(), file);
+	fwrite(cmd.c_str(), 1, cmd.size(), completions);
 }
 
 void completion_init(const char* appname)
 {
 	std::string cmd("complete -c ");
 	cmd += appname;
-	cmd += " -e";
+	cmd += " -e\n";
 	
-	struct stat st{ };
-	if (!::stat((std::string("/etc/fish/completions/") + appname + ".fish").c_str(), &st))
-	{
-		::remove((std::string("/etc/fish/completions/") + appname + ".fish").c_str());
-	}
+//	struct stat st{ };
+//	if (!::stat((std::string("/etc/fish/completions/") + appname + ".fish").c_str(), &st))
+//	{
+//		::remove((std::string("/etc/fish/completions/") + appname + ".fish").c_str());
+//	}
 	
-	FILE* file = ::fopen((std::string("/etc/fish/completions/") + appname + ".fish").c_str(), "wb");
-	if (file == nullptr)
+	struct passwd *pw = ::getpwuid(getuid());
+	std::string s(pw->pw_dir);
+	s += "/.config/fish/completions/";
+	::mkdir(s.c_str(), 0777);
+	s += "xor-crypto.fish";
+	completions = ::fopen(s.c_str(), "wb");
+	if (completions == nullptr)
 	{
 		std::cerr << ::strerror(errno) << "\n";
 		exit(1);
 	}
-	fwrite(cmd.c_str(), 1, cmd.size(), file);
+	fwrite(cmd.c_str(), 1, cmd.size(), completions);
 }
 
 int main(int argc, char** argv)

@@ -385,7 +385,7 @@ std::string& exec(const std::string& cmd)
 
 void set_completion(const char* appname, const char* arg, const char** parameters, size_t size, const char* description, const char* display_after = ""/*, const char* dont_mix_with = ""*/)
 {
-	std::string cmd("complete -c ");
+	std::string cmd("fish -c 'complete -c ");
 	cmd += appname;
 	if (size)
 	{
@@ -432,7 +432,7 @@ void set_completion(const char* appname, const char* arg, const char** parameter
 	}
 	cmd += " -d \"";
 	cmd += description;
-	cmd += "\"";
+	cmd += "\"'";
 	system(cmd.c_str());
 }
 
@@ -442,11 +442,6 @@ void completion_init(const char* appname)
 	cmd += appname;
 	cmd += " -e";
 	system(cmd.c_str());
-	
-	std::string cmd1("complete -c ");
-	cmd1 += appname;
-	cmd1 += " -f";
-	system(cmd1.c_str());
 }
 
 int main(int argc, char** argv)

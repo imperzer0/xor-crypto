@@ -438,9 +438,9 @@ void set_completion(const char* appname, const char* arg, const char** parameter
 
 void completion_init(const char* appname)
 {
-	std::string cmd("complete -c ");
+	std::string cmd("fish -c 'complete -c ");
 	cmd += appname;
-	cmd += " -e";
+	cmd += " -e'";
 	system(cmd.c_str());
 }
 

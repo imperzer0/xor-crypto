@@ -385,7 +385,7 @@ std::string& exec(const std::string& cmd)
 
 void set_completion(const char* appname, const char* arg, const char** parameters, size_t size, const char* description, const char* display_after = ""/*, const char* dont_mix_with = ""*/)
 {
-	std::string cmd("fish -c 'complete -c ");
+	std::string cmd("complete -c ");
 	cmd += appname;
 	if (size)
 	{
@@ -432,16 +432,36 @@ void set_completion(const char* appname, const char* arg, const char** parameter
 	}
 	cmd += " -d \"";
 	cmd += description;
-	cmd += "\"'";
-	system(cmd.c_str());
+	cmd += "\"";
+	
+	FILE* file = ::fopen((std::string("/etc/fish/completions/") + appname + ".fish").c_str(), "wb");
+	if (file == nullptr)
+	{
+		std::cerr << ::strerror(errno) << "\n";
+		exit(1);
+	}
+	fwrite(cmd.c_str(), 1, cmd.size(), file);
 }
 
 void completion_init(const char* appname)
 {
-	std::string cmd("fish -c 'complete -c ");
+	std::string cmd("complete -c ");
 	cmd += appname;
-	cmd += " -e'";
-	system(cmd.c_str());
+	cmd += " -e";
+	
+	struct stat st{ };
+	if (!::stat((std::string("/etc/fish/completions/") + appname + ".fish").c_str(), &st))
+	{
+		::remove((std::string("/etc/fish/completions/") + appname + ".fish").c_str());
+	}
+	
+	FILE* file = ::fopen((std::string("/etc/fish/completions/") + appname + ".fish").c_str(), "wb");
+	if (file == nullptr)
+	{
+		std::cerr << ::strerror(errno) << "\n";
+		exit(1);
+	}
+	fwrite(cmd.c_str(), 1, cmd.size(), file);
 }
 
 int main(int argc, char** argv)

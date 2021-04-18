@@ -392,7 +392,7 @@ void set_completion(const char* appname, const char* arg, const char** parameter
 	cmd += appname;
 	if (size)
 	{
-		cmd += " -n \"not __fish_seen_subcommand_from ";
+		cmd += " -n 'not __fish_seen_subcommand_from ";
 		for (int i = 0; i < size; ++i)
 		{
 			std::stringstream ss(exec(std::string("/bin/fish -c \"echo ") + parameters[i] + "\""));
@@ -416,13 +416,13 @@ void set_completion(const char* appname, const char* arg, const char** parameter
 //			cmd += " && not __fish_seen_subcommand_from ";
 //			cmd += dont_mix_with;
 //		}
-		cmd += "\"";
+		cmd += "'";
 	}
 	cmd += " -f -l ";
 	cmd += arg;
 	if (size)
 	{
-		cmd += " -a \"";
+		cmd += " -a '";
 		for (int i = 0; i < size; ++i)
 		{
 			cmd += parameters[i];
@@ -431,11 +431,11 @@ void set_completion(const char* appname, const char* arg, const char** parameter
 				cmd += " ";
 			}
 		}
-		cmd += "\"";
+		cmd += "'";
 	}
-	cmd += " -d \"";
+	cmd += " -d '";
 	cmd += description;
-	cmd += "\"\n";
+	cmd += "'\n";
 	
 	if (completions == nullptr)
 	{
@@ -451,6 +451,10 @@ void completion_init(const char* appname)
 	cmd += appname;
 	cmd += " -e\n";
 	
+	cmd +="complete -c ";
+	cmd += appname;
+	cmd += " -f\n";
+	
 //	struct stat st{ };
 //	if (!::stat((std::string("/etc/fish/completions/") + appname + ".fish").c_str(), &st))
 //	{
@@ -459,9 +463,7 @@ void completion_init(const char* appname)
 	
 	struct passwd *pw = ::getpwuid(getuid());
 	std::string s(pw->pw_dir);
-	s += "/.config/fish/completions/";
-	::mkdir(s.c_str(), 0777);
-	s += "xor-crypto.fish";
+	s += "/.config/fish/config.fish";
 	completions = ::fopen(s.c_str(), "wb");
 	if (completions == nullptr)
 	{

@@ -10,6 +10,8 @@
 #include <sys/ioctl.h>
 #include <cmath>
 #include <map>
+#include <unistd.h>
+#include <sstream>
 
 #define RETURN_TO_BEGIN_OF_PREV_LINE "\033[F"
 #define RETURN_TO_PREV_LINE "\033[A"
@@ -359,6 +361,94 @@ inline void promt(std::string file, cleanup_function cleanup_func, void* args = 
 	}
 }
 
+std::string& exec(const std::string& cmd)
+{
+	char buffer[128];
+	auto* result = new std::string;
+	FILE* pipe = popen(cmd.c_str(), "r");
+	if (!pipe) throw std::runtime_error("popen() failed!");
+	try
+	{
+		while (fgets(buffer, sizeof buffer, pipe) != nullptr)
+		{
+			*result += buffer;
+			bzero(buffer, sizeof buffer);
+		}
+	} catch (...)
+	{
+		pclose(pipe);
+		throw;
+	}
+	pclose(pipe);
+	return *result;
+}
+
+void set_completion(const char* appname, const char* arg, const char** parameters, size_t size, const char* description, const char* display_after = ""/*, const char* dont_mix_with = ""*/)
+{
+	std::string cmd("complete -c ");
+	cmd += appname;
+	if (size)
+	{
+		cmd += " -n \"not __fish_seen_subcommand_from ";
+		for (int i = 0; i < size; ++i)
+		{
+			std::stringstream ss(exec(std::string("/bin/fish -c \"echo ") + parameters[i] + "\""));
+			std::string s;
+			while (ss >> s)
+			{
+				cmd += "--";
+				cmd += arg;
+				cmd += "=";
+				cmd += s;
+				cmd += " ";
+			}
+		}
+		if (!std::string(display_after).empty())
+		{
+			cmd += "&& __fish_seen_subcommand_from ";
+			cmd += display_after;
+		}
+//		if (!std::string(dont_mix_with).empty())
+//		{
+//			cmd += " && not __fish_seen_subcommand_from ";
+//			cmd += dont_mix_with;
+//		}
+		cmd += "\"";
+	}
+	cmd += " -f -l ";
+	cmd += arg;
+	if (size)
+	{
+		cmd += " -a \"";
+		for (int i = 0; i < size; ++i)
+		{
+			cmd += parameters[i];
+			if (i != size - 1)
+			{
+				cmd += " ";
+			}
+		}
+		cmd += "\"";
+	}
+	cmd += " -d \"";
+	cmd += description;
+	cmd += "\"";
+	system(cmd.c_str());
+}
+
+void completion_init(const char* appname)
+{
+	std::string cmd("complete -c ");
+	cmd += appname;
+	cmd += " -e";
+	system(cmd.c_str());
+	
+	std::string cmd1("complete -c ");
+	cmd1 += appname;
+	cmd1 += " -f";
+	system(cmd1.c_str());
+}
+
 int main(int argc, char** argv)
 {
 	setting1();
@@ -597,6 +687,16 @@ int main(int argc, char** argv)
 			}
 		}
 #pragma clang diagnostic pop
+	}
+	else if ((action == "install") && argc == 3)
+	{
+		completion_init(argv[2]);
+		set_completion(argv[2], "action", new const char* [5]{"encrypt", "decrypt", "info", "help", "install"}, 5, "action");
+		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file or directory", "--action=encrypt --action=e");
+		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file", "--action=decrypt --action=d");
+		set_completion(argv[2], "output", new const char* [1]{"(ls -p | grep -v /)"}, 1, "output file");
+		set_completion(argv[2], "passwd", new const char* [0]{ }, 0, "password");
+		set_completion(argv[2], "passwd-file", new const char* [1]{"(ls -p | grep -v /)"}, 1, "file with password");
 	}
 	else
 	{

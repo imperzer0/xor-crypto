@@ -24,4 +24,5 @@ build() {
 package() {
 	cd "$pkgname"
 	install -Dm755 ./xor_crypto "$pkgdir/usr/bin/$pkgname"
+	$pkgname --action=install $pkgname
 }

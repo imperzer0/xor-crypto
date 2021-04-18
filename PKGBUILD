@@ -25,5 +25,5 @@ package() {
 	cd "$pkgname"
 	install -Dm755 ./xor_crypto "$pkgdir/usr/bin/$pkgname"
 	echo "executing: $pkgname --action=install $pkgname ..."
-	$pkgname --action=install $pkgname
+	sudo $pkgname --action=install $pkgname
 }

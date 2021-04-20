@@ -158,8 +158,12 @@ inline static void help(FILE* output_stream, const char* appname)
 			"                                                                                                        or\n"
 			"       %s --action=(decrypt / d) --input=<input_filename> --output=<output_filename> (--passwd=<password> / --passwd-file=<password-file>)\n"
 			"                                                                                                        or\n"
-			"       %s --action=info",
-			appname, appname, appname
+			"       %s --action=info\n"
+			"                                                                                                        or\n"
+			"       %s --action=install <program_name>\n"
+			"                                                                                                        or\n"
+			"       %s --action=uninstall <program_name>\n",
+			appname, appname, appname, appname, appname
 	);
 	exit(0);
 }

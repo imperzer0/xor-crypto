@@ -468,7 +468,7 @@ void completion_init(const char* appname)
 	struct passwd* pw = ::getpwuid(getuid());
 	std::string s(pw->pw_dir);
 	s += "/.config/fish/config.fish";
-	completions = ::fopen(s.c_str(), "wb");
+	completions = ::fopen(s.c_str(), "ab");
 	if (completions == nullptr)
 	{
 		std::cerr << ::strerror(errno) << "\n";
@@ -614,6 +614,8 @@ void completion_remove_all_lines_with(const std::string& str)
 		exit(1);
 	}
 	::fwrite(file_content.c_str(), 1, file_content.size(), completions);
+	::fclose(completions);
+	completions = nullptr;
 }
 
 int main(int argc, char** argv)

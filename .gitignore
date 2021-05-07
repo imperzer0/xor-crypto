@@ -1,2 +1,5 @@
 # Project exclude paths
 /cmake-build-*/
+/src
+/pkg
+/xor-crypto*.pkg.tar.zst

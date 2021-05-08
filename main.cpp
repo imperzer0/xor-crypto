@@ -403,11 +403,11 @@ void set_completion(const char* appname, const char* arg, const char** parameter
 			std::string s;
 			while (ss >> s)
 			{
-				cmd += "--";
+				cmd += "\"--";
 				cmd += arg;
 				cmd += "=";
 				cmd += s;
-				cmd += " ";
+				cmd += "\" ";
 			}
 		}
 		if (!std::string(display_after).empty())
@@ -860,6 +860,7 @@ int main(int argc, char** argv)
 	else if ((action == "install") && argc == 3)
 	{
 		completion_init(argv[2]);
+		set_completion(argv[2], "help", new const char* [0]{}, 0, "print help");
 		set_completion(argv[2], "action", new const char* [5]{"encrypt", "decrypt", "info", "help", "install"}, 5, "action");
 		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file or directory", "--action=encrypt --action=e");
 		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file", "--action=decrypt --action=d");

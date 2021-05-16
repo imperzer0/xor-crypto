@@ -207,6 +207,7 @@ static void xor_crypt_with_password_file(const std::string& input_file, const st
 	std::cout << "\n";
 	fclose(input_f);
 	fclose(output_f);
+	fclose(passwd_f);
 }
 
 inline static void remove_file(const char* name)

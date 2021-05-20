@@ -21,7 +21,7 @@ inline static void help(FILE* output_stream, const char* appname)
 	exit(0);
 }
 
-inline std::map<std::string, std::string>& parse_args(int argc, char** const& argv)
+std::map<std::string, std::string>& parse_args(int argc, char** const& argv)
 {
 	auto result = new std::map<std::string, std::string>();
 	for (int i = 1; i < argc; ++i)
@@ -75,7 +75,7 @@ constexpr const char* info_message[]{"< to enable fake progress bar press 'c' >\
 									 "| <32> | To decrypt our data we must have two of three numbers: our data (encrypted or original) and password.\n"
 									 "| <33> | We always store only one of them - data (encrypted or original), password we memorize."};
 
-void encrypt_entry(const std::string& input, const std::string& output, const std::string& passwd)
+inline void encrypt_entry(const std::string& input, const std::string& output, const std::string& passwd)
 {
 	const char* resolved_input = ::realpath(input.c_str(), nullptr);
 	if (resolved_input == nullptr)
@@ -123,7 +123,7 @@ void encrypt_entry(const std::string& input, const std::string& output, const st
 	}
 }
 
-void encrypt_entry_with_file(const std::string& input, const std::string& output, const std::string& passwd)
+inline void encrypt_entry_with_file(const std::string& input, const std::string& output, const std::string& passwd)
 {
 	const char* resolved_input = ::realpath(input.c_str(), nullptr);
 	if (resolved_input == nullptr)
@@ -177,7 +177,7 @@ void encrypt_entry_with_file(const std::string& input, const std::string& output
 	}
 }
 
-void decrypt_entry(const std::string& input, const std::string& output, const std::string& passwd)
+inline void decrypt_entry(const std::string& input, const std::string& output, const std::string& passwd)
 {
 	const char* resolved_input = ::realpath(input.c_str(), nullptr);
 	if (resolved_input == nullptr)
@@ -200,7 +200,7 @@ void decrypt_entry(const std::string& input, const std::string& output, const st
 	}
 }
 
-void decrypt_entry_with_file(const std::string& input, const std::string& output, const std::string& passwd)
+inline void decrypt_entry_with_file(const std::string& input, const std::string& output, const std::string& passwd)
 {
 	const char* resolved_input = ::realpath(input.c_str(), nullptr);
 	if (resolved_input == nullptr)
@@ -405,13 +405,13 @@ int main(int argc, char** argv)
 		}
 #pragma clang diagnostic pop
 	}
-	else if ((action == "install") && argc == 3)
+	else if (action == "install" && argc == 3)
 	{
 		completion_init(argv[2]);
 		set_completion(argv[2], "help", new const char* [0]{ }, 0, "print help");
 		set_completion(argv[2], "action", new const char* [5]{"encrypt", "decrypt", "info", "help", "install"}, 5, "action");
-		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file or directory", "--action=encrypt --action=e");
-		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file", "--action=decrypt --action=d");
+		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file or directory", "--action=encrypt");
+		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file", "--action=decrypt");
 		set_completion(argv[2], "output", new const char* [1]{"(ls -p | grep -v /)"}, 1, "output file");
 		set_completion(argv[2], "passwd", new const char* [0]{ }, 0, "password");
 		set_completion(argv[2], "passwd-file", new const char* [1]{"(ls -p | grep -v /)"}, 1, "file with password");

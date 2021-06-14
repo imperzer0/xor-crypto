@@ -105,11 +105,14 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 	{
 		error("Could not open file " + input_file + ". " + ::strerror(errno));
 	}
+	
 	FILE* input_f = ::fopen(input_file.c_str(), "rb");
 	FILE* output_f = ::fopen(output_file.c_str(), "wb");
+	
 	unsigned char buffer[BUFFER_SIZE];
 	int password_iter = 0;
 	size_t read, progress = 0, file_size = st.st_size;
+	
 	while (!::feof(input_f))
 	{
 		::bzero(buffer, BUFFER_SIZE);
@@ -139,7 +142,9 @@ static void xor_crypt(const std::string& input_file, const std::string& output_f
 		double perc = (double)((long double)progress * 100.0 / (long double)file_size);
 		draw_progress_bar("Encrypting:", perc);
 	}
+	
 	std::cout << "\n";
+	
 	fclose(input_f);
 	fclose(output_f);
 }
@@ -151,14 +156,17 @@ static void xor_crypt_with_password_file(const std::string& input_file, const st
 	{
 		error("Could not open file " + input_file + ". " + ::strerror(errno));
 	}
+	
 	FILE* input_f = ::fopen(input_file.c_str(), "rb");
 	FILE* output_f = ::fopen(output_file.c_str(), "wb");
 	FILE* passwd_f = ::fopen(password_file.c_str(), "rb");
+	
 	unsigned char buffer[BUFFER_SIZE];
 	int password_iter = 0;
 	size_t read, read_passwd = 0, progress = 0, file_size = st.st_size;
 	::stat(password_file.c_str(), &st);
 	char password[BUFFER_SIZE];
+	
 	while (!::feof(input_f))
 	{
 		::bzero(buffer, BUFFER_SIZE);
@@ -175,8 +183,9 @@ static void xor_crypt_with_password_file(const std::string& input_file, const st
 		
 		for (int i = 0; i < read; ++i)
 		{
-			if (!(password_iter % BUFFER_SIZE) && !::feof(passwd_f))
+			if (password_iter == BUFFER_SIZE && !::feof(passwd_f))
 			{
+				password_iter = 0;
 				::bzero(password, BUFFER_SIZE);
 				read_passwd = ::fread(password, sizeof(char), BUFFER_SIZE, passwd_f);
 				if (!read_passwd || read_passwd > BUFFER_SIZE)
@@ -187,15 +196,15 @@ static void xor_crypt_with_password_file(const std::string& input_file, const st
 					error("Failed to read bytes from file \"" + password_file + "\".");
 				}
 			}
-			else if ((password_iter % BUFFER_SIZE == read_passwd || !(password_iter % BUFFER_SIZE)) && ::feof(passwd_f))
+			else if ((password_iter == read_passwd || password_iter == BUFFER_SIZE) && ::feof(passwd_f))
 			{
+				password_iter = 0;
 				::fseek(passwd_f, 0, SEEK_SET);
 				::bzero(password, BUFFER_SIZE);
 				read_passwd = ::fread(password, sizeof(char), BUFFER_SIZE, passwd_f);
-				password_iter = 0;
 			}
 			
-			buffer[i] ^= password[password_iter % BUFFER_SIZE];
+			buffer[i] ^= password[password_iter];
 			
 			++password_iter;
 		}
@@ -204,8 +213,91 @@ static void xor_crypt_with_password_file(const std::string& input_file, const st
 		double perc = (double)((long double)progress * 100.0 / (long double)file_size);
 		draw_progress_bar("Encrypting:", perc);
 	}
+	
 	std::cout << "\n";
+	
 	fclose(input_f);
+	fclose(output_f);
+	fclose(passwd_f);
+}
+
+static void xor_crypt_input_string(const std::string& input_str, const std::string& output_file, const std::string& password)
+{
+	FILE* output_f = ::fopen(output_file.c_str(), "wb");
+	
+	int password_iter = 0;
+	std::string buffer(input_str);
+	size_t progress = 0, file_size = buffer.size();
+	
+	for (int i = 0; i < buffer.size(); ++i)
+	{
+		++progress;
+		
+		if (password_iter == password.length())
+		{
+			password_iter = 0;
+		}
+		
+		buffer[i] ^= password[password_iter];
+		++password_iter;
+		
+		double perc = (double)((long double)progress * 100.0 / (long double)file_size);
+		draw_progress_bar("Encrypting:", perc);
+	}
+	
+	::fwrite(buffer.c_str(), sizeof(char), buffer.size(), output_f);
+	
+	std::cout << "\n";
+	
+	fclose(output_f);
+}
+
+static void xor_crypt_input_string_with_password_file(const std::string& input_str, const std::string& output_file, const std::string& password_file)
+{
+	FILE* output_f = ::fopen(output_file.c_str(), "wb");
+	FILE* passwd_f = ::fopen(password_file.c_str(), "rb");
+	
+	std::string buffer(input_str);
+	int password_iter = 0;
+	size_t read, read_passwd = 0, progress = 0, file_size = buffer.size();
+	struct stat st;
+	::stat(password_file.c_str(), &st);
+	char password[BUFFER_SIZE];
+	for (int i = 0; i < buffer.size(); ++i)
+	{
+		if (password_iter == BUFFER_SIZE && !::feof(passwd_f))
+		{
+			password_iter = 0;
+			::bzero(password, BUFFER_SIZE);
+			read_passwd = ::fread(password, sizeof(char), BUFFER_SIZE, passwd_f);
+			if (!read_passwd || read_passwd > BUFFER_SIZE)
+			{
+				::fclose(output_f);
+				::fclose(passwd_f);
+				error("Failed to read bytes from file \"" + password_file + "\".");
+			}
+		}
+		else if ((password_iter == read_passwd || password_iter == BUFFER_SIZE) && ::feof(passwd_f))
+		{
+			::fseek(passwd_f, 0, SEEK_SET);
+			::bzero(password, BUFFER_SIZE);
+			read_passwd = ::fread(password, sizeof(char), BUFFER_SIZE, passwd_f);
+			password_iter = 0;
+		}
+		
+		buffer[i] ^= password[password_iter % BUFFER_SIZE];
+		
+		++progress;
+		++password_iter;
+		
+		double perc = (double)((long double)progress * 100.0 / (long double)file_size);
+		draw_progress_bar("Encrypting:", perc);
+	}
+	
+	::fwrite(buffer.c_str(), sizeof(char), buffer.size(), output_f);
+	
+	std::cout << "\n";
+	
 	fclose(output_f);
 	fclose(passwd_f);
 }

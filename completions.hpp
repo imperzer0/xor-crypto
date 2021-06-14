@@ -122,10 +122,10 @@ void completion_init(const char* appname)
 	fwrite(cmd.c_str(), 1, cmd.size(), completions);
 }
 
-class fstream
+class linefstream
 {
 public:
-	explicit fstream(FILE* fd) : fd(fd)
+	explicit linefstream(FILE* fd) : fd(fd)
 	{ }
 	
 	std::string& getline()
@@ -235,7 +235,7 @@ void completion_remove_all_lines_with(const std::string& str)
 	}
 	
 	std::string file_content;
-	fstream file(read_completions);
+	linefstream file(read_completions);
 	while (file)
 	{
 		std::string& line = file.getline();

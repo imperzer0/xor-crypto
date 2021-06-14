@@ -229,6 +229,59 @@ inline void decrypt_entry_with_file(const std::string& input, const std::string&
 	}
 }
 
+
+inline void encrypt_entry_string(const std::string& input, const std::string& output, const std::string& passwd)
+{
+	promt(
+			output, [](void*)
+			{ exit(0); }
+	);
+	remove_file(output.c_str());
+	xor_crypt_input_string(input, output, passwd);
+}
+
+inline void encrypt_entry_string_with_file(const std::string& input, const std::string& output, const std::string& passwd)
+{
+	const char* resolved_passwd = ::realpath(passwd.c_str(), nullptr);
+	if (resolved_passwd == nullptr)
+	{
+		error("Can not access file " + passwd + ". Maybe it does not exists.");
+	}
+	
+	promt(
+			output, [](void*)
+			{ exit(0); }
+	);
+	remove_file(output.c_str());
+	xor_crypt_input_string_with_password_file(input, output, resolved_passwd);
+}
+
+inline void decrypt_entry_string(const std::string& input, const std::string& output, const std::string& passwd)
+{
+	promt(
+			output, [](void*)
+			{ exit(0); }
+	);
+	remove_file(output.c_str());
+	xor_crypt_input_string(input, output, passwd);
+}
+
+inline void decrypt_entry_string_with_file(const std::string& input, const std::string& output, const std::string& passwd)
+{
+	const char* resolved_passwd = ::realpath(passwd.c_str(), nullptr);
+	if (resolved_passwd == nullptr)
+	{
+		error("Can not access file " + passwd + ". Maybe it does not exists.");
+	}
+	
+	promt(
+			output, [](void*)
+			{ exit(0); }
+	);
+	remove_file(output.c_str());
+	xor_crypt_input_string_with_password_file(input, output, resolved_passwd);
+}
+
 template <typename _char = char>
 std::basic_string<_char>& read_password(std::basic_istream<_char>& input_stream = std::cin, std::basic_ostream<_char>& output_stream = std::cout)
 {
@@ -254,6 +307,61 @@ std::basic_string<_char>& read_password(std::basic_istream<_char>& input_stream 
 		{
 			*console_input += c;
 			output_stream << '*';
+		}
+	}
+	return *console_input;
+}
+
+std::string& read_text()
+{
+	std::cout << "Type text here to encode. Once you've finished type ESC to start process.\n";
+	struct winsize sz;
+	ioctl(stdout->_fileno, TIOCGWINSZ, &sz);
+	size_t size = sz.ws_col;
+	std::cout << '+';
+	for (int i = 1; i < size - 1; ++i)
+	{
+		std::cout << '=';
+	}
+	std::cout << "+\n| ";
+	char c;
+	auto* console_input = new std::string();
+	std::vector<std::string> lines;
+	lines.emplace_back();
+	while (true)
+	{
+		c = std::cin.get();
+		if (c == 0x1b)
+		{
+			std::cout << "\n";
+			break;
+		}
+		else if (c == '\n')
+		{
+			*console_input += c;
+			std::cout << "\n| ";
+			lines.back() += c;
+			lines.emplace_back();
+		}
+		else if (c == '\b' || c == 0x7f)
+		{
+			if (!lines.back().empty())
+			{
+				lines.back().pop_back();
+				std::cout << "\b \b";
+			}
+			else
+			{
+				lines.pop_back();
+				std::cout << "\r  " << RETURN_TO_BEGIN_OF_PREV_LINE << "\033[" << lines.back().size() + 1 << "C";
+			}
+			console_input->pop_back();
+		}
+		else
+		{
+			*console_input += c;
+			lines.back() += c;
+			std::cout << c;
 		}
 	}
 	return *console_input;
@@ -291,40 +399,72 @@ int main(int argc, char** argv)
 			help(stdout, argv[0]);
 		}
 		
+		std::string input(pos->second), output(pos2->second), passwd;
+		
 		if ((pos3 == parsed_args.end() || pos3->second.empty()) && (pos4 == parsed_args.end() || pos4->second.empty()))
 		{
 			std::cout << "type password: ";
-			char c;
 			std::string console_input = read_password();
 			parsed_args["--passwd"] = console_input;
 			pos3 = parsed_args.find("--passwd");
 		}
 		
-		std::string input(pos->second), output(pos2->second), passwd;
+		bool is_from_stdin = pos->second == "&stdin";
 		
-		if (pos3 != parsed_args.end())
+		if (is_from_stdin)
 		{
-			passwd = pos3->second;
-			encrypt_entry(input, output, passwd);
-			if (pos4 != parsed_args.end())
+			input = read_text();
+			if (pos3 != parsed_args.end())
+			{
+				passwd = pos3->second;
+				encrypt_entry_string(input, output, passwd);
+				if (pos4 != parsed_args.end())
+				{
+					passwd = pos4->second;
+					std::string tmp_file(output);
+					tmp_file += ".0";
+					struct stat st;
+					while (!::stat(tmp_file.c_str(), &st))
+					{
+						tmp_file += ".0";
+					}
+					encrypt_entry_string_with_file(output, tmp_file, passwd);
+					remove_file(output.c_str());
+					::rename(tmp_file.c_str(), output.c_str());
+				}
+			}
+			else if (pos4 != parsed_args.end())
 			{
 				passwd = pos4->second;
-				std::string tmp_file(output);
-				tmp_file += ".0";
-				struct stat st;
-				while (!::stat(tmp_file.c_str(), &st))
-				{
-					tmp_file += ".0";
-				}
-				encrypt_entry_with_file(output, tmp_file, passwd);
-				remove_file(output.c_str());
-				::rename(tmp_file.c_str(), output.c_str());
+				encrypt_entry_string_with_file(input, output, passwd);
 			}
 		}
-		else if (pos4 != parsed_args.end())
+		else
 		{
-			passwd = pos4->second;
-			encrypt_entry_with_file(input, output, passwd);
+			if (pos3 != parsed_args.end())
+			{
+				passwd = pos3->second;
+				encrypt_entry(input, output, passwd);
+				if (pos4 != parsed_args.end())
+				{
+					passwd = pos4->second;
+					std::string tmp_file(output);
+					tmp_file += ".0";
+					struct stat st;
+					while (!::stat(tmp_file.c_str(), &st))
+					{
+						tmp_file += ".0";
+					}
+					encrypt_entry_with_file(output, tmp_file, passwd);
+					remove_file(output.c_str());
+					::rename(tmp_file.c_str(), output.c_str());
+				}
+			}
+			else if (pos4 != parsed_args.end())
+			{
+				passwd = pos4->second;
+				encrypt_entry_with_file(input, output, passwd);
+			}
 		}
 	}
 	else if (action == "decrypt" && argc >= 4 && argc <= 6)
@@ -340,6 +480,8 @@ int main(int argc, char** argv)
 			help(stdout, argv[0]);
 		}
 		
+		std::string input(pos->second), output(pos2->second), passwd;
+		
 		if ((pos3 == parsed_args.end() || pos3->second.empty()) && (pos4 == parsed_args.end() || pos4->second.empty()))
 		{
 			std::cout << "type password: ";
@@ -348,31 +490,61 @@ int main(int argc, char** argv)
 			pos3 = parsed_args.find("--passwd");
 		}
 		
-		std::string input(pos->second), output(pos2->second), passwd;
+		bool is_from_stdin = pos->second == "&stdin";
 		
-		if (pos3 != parsed_args.end())
+		if (is_from_stdin)
 		{
-			passwd = pos3->second;
-			decrypt_entry(input, output, passwd);
-			if (pos4 != parsed_args.end())
+			if (pos3 != parsed_args.end())
+			{
+				passwd = pos3->second;
+				decrypt_entry_string(input, output, passwd);
+				if (pos4 != parsed_args.end())
+				{
+					passwd = pos4->second;
+					std::string tmp_file(output);
+					tmp_file += ".0";
+					struct stat st;
+					while (!::stat(tmp_file.c_str(), &st))
+					{
+						tmp_file += ".0";
+					}
+					decrypt_entry_string_with_file(output, tmp_file, passwd);
+					remove_file(output.c_str());
+					::rename(tmp_file.c_str(), output.c_str());
+				}
+			}
+			else if (pos4 != parsed_args.end())
 			{
 				passwd = pos4->second;
-				std::string tmp_file(output);
-				tmp_file += ".0";
-				struct stat st;
-				while (!::stat(tmp_file.c_str(), &st))
-				{
-					tmp_file += ".0";
-				}
-				decrypt_entry_with_file(output, tmp_file, passwd);
-				remove_file(output.c_str());
-				::rename(tmp_file.c_str(), output.c_str());
+				decrypt_entry_string_with_file(input, output, passwd);
 			}
 		}
-		else if (pos4 != parsed_args.end())
+		else
 		{
-			passwd = pos4->second;
-			decrypt_entry_with_file(input, output, passwd);
+			if (pos3 != parsed_args.end())
+			{
+				passwd = pos3->second;
+				decrypt_entry(input, output, passwd);
+				if (pos4 != parsed_args.end())
+				{
+					passwd = pos4->second;
+					std::string tmp_file(output);
+					tmp_file += ".0";
+					struct stat st;
+					while (!::stat(tmp_file.c_str(), &st))
+					{
+						tmp_file += ".0";
+					}
+					decrypt_entry_with_file(output, tmp_file, passwd);
+					remove_file(output.c_str());
+					::rename(tmp_file.c_str(), output.c_str());
+				}
+			}
+			else if (pos4 != parsed_args.end())
+			{
+				passwd = pos4->second;
+				decrypt_entry_with_file(input, output, passwd);
+			}
 		}
 	}
 	else if (action == "info" && argc == 2)
@@ -410,9 +582,9 @@ int main(int argc, char** argv)
 		completion_init(argv[2]);
 		set_completion(argv[2], "help", new const char* [0]{ }, 0, "print help");
 		set_completion(argv[2], "action", new const char* [5]{"encrypt", "decrypt", "info", "help", "install"}, 5, "action");
-		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file or directory", "--action=encrypt");
-		set_completion(argv[2], "input", new const char* [1]{"(ls -p | grep -v /)"}, 1, "input file", "--action=decrypt");
-		set_completion(argv[2], "output", new const char* [1]{"(ls -p | grep -v /)"}, 1, "output file");
+		set_completion(argv[2], "input", new const char* [2]{"(ls -p | grep -v /)", "%stdin%"}, 2, "input file or directory", "--action=encrypt");
+		set_completion(argv[2], "input", new const char* [2]{"(ls -p | grep -v /)", "%stdin%"}, 2, "input file", "--action=decrypt");
+		set_completion(argv[2], "output", new const char* [2]{"(ls -p | grep -v /)", "%stdout%"}, 2, "output file");
 		set_completion(argv[2], "passwd", new const char* [0]{ }, 0, "password");
 		set_completion(argv[2], "passwd-file", new const char* [1]{"(ls -p | grep -v /)"}, 1, "file with password");
 	}

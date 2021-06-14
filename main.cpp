@@ -582,9 +582,9 @@ int main(int argc, char** argv)
 		completion_init(argv[2]);
 		set_completion(argv[2], "help", new const char* [0]{ }, 0, "print help");
 		set_completion(argv[2], "action", new const char* [5]{"encrypt", "decrypt", "info", "help", "install"}, 5, "action");
-		set_completion(argv[2], "input", new const char* [2]{"(ls -p | grep -v /)", "%stdin%"}, 2, "input file or directory", "--action=encrypt");
-		set_completion(argv[2], "input", new const char* [2]{"(ls -p | grep -v /)", "%stdin%"}, 2, "input file", "--action=decrypt");
-		set_completion(argv[2], "output", new const char* [2]{"(ls -p | grep -v /)", "%stdout%"}, 2, "output file");
+		set_completion(argv[2], "input", new const char* [2]{"(ls -p | grep -v /)", "\\\\&stdin"}, 2, "input file or directory", "--action=encrypt");
+		set_completion(argv[2], "input", new const char* [2]{"(ls -p | grep -v /)", "\\\\&stdin"}, 2, "input file", "--action=decrypt");
+		set_completion(argv[2], "output", new const char* [1]{"(ls -p | grep -v /)"}, 1, "output file");
 		set_completion(argv[2], "passwd", new const char* [0]{ }, 0, "password");
 		set_completion(argv[2], "passwd-file", new const char* [1]{"(ls -p | grep -v /)"}, 1, "file with password");
 	}

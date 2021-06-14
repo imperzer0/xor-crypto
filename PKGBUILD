@@ -1,6 +1,6 @@
 pkgname="xor-crypto"
 epoch=3
-pkgver=3
+pkgver=4
 pkgrel=1
 pkgdesc="xor encryptor program"
 arch=("x86_64")
@@ -10,14 +10,15 @@ depends=("libzip")
 makedepends=("cmake>=3.0")
 source=("local://main.cpp" "local://CMakeLists.txt" "local://archive_and_encrypt.hpp" "local://completions.hpp" "local://terminal_output.hpp")
 md5sums=("SKIP" "SKIP" "SKIP" "SKIP" "SKIP")
+install=xor-crypto.install
 
-build() {
+build()
+{
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ .
 	make
 }
 
-package() {
+package()
+{
 	install -Dm755 ./xor_crypto "$pkgdir/usr/bin/$pkgname"
-	echo -e "\033[35mexecuting: $pkgname --action=install $pkgname ...\033[0m"
-	sudo $pkgname --action=install $pkgname
 }

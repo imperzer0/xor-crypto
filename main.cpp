@@ -577,7 +577,7 @@ int main(int argc, char** argv)
 		}
 #pragma clang diagnostic pop
 	}
-	else if (action == "install" && argc == 3)
+	else if (action == "install-completions" && argc == 3)
 	{
 		completion_init(argv[2]);
 		set_completion(argv[2], "help", new const char* [0]{ }, 0, "print help");
@@ -588,7 +588,7 @@ int main(int argc, char** argv)
 		set_completion(argv[2], "passwd", new const char* [0]{ }, 0, "password");
 		set_completion(argv[2], "passwd-file", new const char* [1]{"(ls -p | grep -v /)"}, 1, "file with password");
 	}
-	else if ((action == "uninstall") && argc == 3)
+	else if ((action == "uninstall-completions") && argc == 3)
 	{
 		std::string str("complete -c ");
 		str += argv[2];

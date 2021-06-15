@@ -5,18 +5,39 @@
 
 inline static void help(FILE* output_stream, const char* appname)
 {
+	size_t len = strlen(appname);
+	
+	char* spacing = new char[len + 1];
+	
+	for (int i = 0; i < len; ++i)
+	{
+		spacing[i] = ' ';
+	}
+	spacing[len] = 0;
+	
 	fprintf(
 			output_stream,
-			"Usage: %s --action=encrypt --input=<input_path> --output=<encrypted_filename> (--passwd=<password> --passwd-file=<password-file>)\n"
-			"       or\n"
-			"       %s --action=decrypt --input=<input_filename> --output=<output_filename> (--passwd=<password> --passwd-file=<password-file>)\n"
-			"       or\n"
-			"       %s --action=info\n"
-			"       or\n"
-			"       %s --action=install <program_name>\n"
-			"       or\n"
-			"       %s --action=uninstall <program_name>\n",
-			appname, appname, appname, appname, appname
+			"Usage:\n"
+			"      %s --action=encrypt --input=<input_path>             --- Encrypt file or input using password.\n" // 1
+			"      %s--output=<encrypted_filename> (--passwd=<password> --- Password has no length restrictions.\n" // 2 s
+			"      %s--passwd-file=<password-file>)\n" // 3 s
+			"      or\n"
+			"      %s --action=decrypt --input=<input_filename>         --- Decrypt file using the same password.\n" // 4
+			"      %s--output=<output_filename> (--passwd=<password>    --- Password has no length restrictions.\n" // 5 s
+			"      %s--passwd-file=<password-file>)\n" // 6 s
+			"      or\n"
+			"      %s --action=info                                     --- Get more information how program works\n" // 7
+			"      %s                                                   --- and test progress bar.\n" // 8 s
+			"      or\n"
+			"      %s --action=install-completions <program_name>       --- Installs completions (if run from sudo -\n" // 9
+			"      %s                                                   --- for all users, otherwise - only for\n" // 10 s
+			"      %s                                                   --- current user).\n" // 11 s
+			"      or\n"
+			"      %s --action=uninstall-completions <program_name>     --- Uninstalls completions (if run from sudo -\n" // 12
+			"      %s                                                   --- for all users, otherwise - only for current\n" // 13 s
+			"      %s                                                   --- user).\n", // 14 s
+			// 1        2        3        4        5        6        7        8        9       10       11       12       13       14
+			appname, spacing, spacing, appname, spacing, spacing, appname, spacing, appname, spacing, spacing, appname, spacing, spacing
 	);
 	exit(0);
 }
@@ -580,13 +601,13 @@ int main(int argc, char** argv)
 	else if (action == "install-completions" && argc == 3)
 	{
 		completion_init(argv[2]);
-		set_completion(argv[2], "help", new const char* [0]{ }, 0, "print help");
-		set_completion(argv[2], "action", new const char* [5]{"encrypt", "decrypt", "info", "help", "install"}, 5, "action");
-		set_completion(argv[2], "input", new const char* [2]{"(ls -p | grep -v /)", "\\\\&stdin"}, 2, "input file or directory", "--action=encrypt");
-		set_completion(argv[2], "input", new const char* [2]{"(ls -p | grep -v /)", "\\\\&stdin"}, 2, "input file", "--action=decrypt");
-		set_completion(argv[2], "output", new const char* [1]{"(ls -p | grep -v /)"}, 1, "output file");
-		set_completion(argv[2], "passwd", new const char* [0]{ }, 0, "password");
-		set_completion(argv[2], "passwd-file", new const char* [1]{"(ls -p | grep -v /)"}, 1, "file with password");
+		set_completion(argv[2], "help", new const char* []{ }, 0, "print help");
+		set_completion(argv[2], "action", new const char* []{"encrypt", "decrypt", "info", "help", "install-completions", "uninstall-completions"}, 6, "action");
+		set_completion(argv[2], "input", new const char* []{"(ls -p | grep -v /)", "\\\\&stdin"}, 2, "input file or directory", "--action=encrypt");
+		set_completion(argv[2], "input", new const char* []{"(ls -p | grep -v /)", "\\\\&stdin"}, 2, "input file", "--action=decrypt");
+		set_completion(argv[2], "output", new const char* []{"(ls -p | grep -v /)"}, 1, "output file");
+		set_completion(argv[2], "passwd", new const char* []{ }, 0, "password");
+		set_completion(argv[2], "passwd-file", new const char* []{"(ls -p | grep -v /)"}, 1, "file with password");
 	}
 	else if ((action == "uninstall-completions") && argc == 3)
 	{

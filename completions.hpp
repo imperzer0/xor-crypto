@@ -110,9 +110,17 @@ void completion_init(const char* appname)
 //		::remove((std::string("/etc/fish/completions/") + appname + ".fish").c_str());
 //	}
 	
-	struct passwd* pw = ::getpwuid(getuid());
-	std::string s(pw->pw_dir);
-	s += "/.config/fish/config.fish";
+	std::string s;
+	if (!getuid())
+	{
+		s = "/etc/fish/config.fish";
+	}
+	else
+	{
+		struct passwd* pw = ::getpwuid(getuid());
+		s = pw->pw_dir;
+		s += "/.config/fish/config.fish";
+	}
 	completions = ::fopen(s.c_str(), "ab");
 	if (completions == nullptr)
 	{
@@ -224,9 +232,18 @@ private:
 
 void completion_remove_all_lines_with(const std::string& str)
 {
-	struct passwd* pw = ::getpwuid(getuid());
-	std::string s(pw->pw_dir);
-	s += "/.config/fish/config.fish";
+	std::string s;
+	if (!getuid())
+	{
+		s = "/etc/fish/config.fish";
+	}
+	else
+	{
+		struct passwd* pw = ::getpwuid(getuid());
+		s = pw->pw_dir;
+		s += "/.config/fish/config.fish";
+	}
+	
 	auto* read_completions = ::fopen(s.c_str(), "rb");
 	if (read_completions == nullptr)
 	{

@@ -4,7 +4,7 @@ pkgver=5
 pkgrel=1
 pkgdesc="xor encryptor program"
 arch=("x86_64")
-url="https://github.com/Imper927/xor_crypto"
+url="https://github.com/imperzer0/xor-crypto"
 license=('GPL')
 depends=("libzip")
 makedepends=("cmake>=3.0")
@@ -20,5 +20,5 @@ build()
 
 package()
 {
-	install -Dm755 ./xor_crypto "$pkgdir/usr/bin/$pkgname"
+	install -Dm755 "./$pkgname" "$pkgdir/usr/bin/$pkgname"
 }

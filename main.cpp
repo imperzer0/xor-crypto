@@ -19,25 +19,40 @@ inline static void help(FILE* output_stream, const char* appname)
 			output_stream,
 			"Usage:\n"
 			"      %s --action=encrypt --input=<input_path>             --- Encrypt file or input using password.\n" // 1
-			"      %s--output=<encrypted_filename> (--passwd=<password> --- Password has no length restrictions.\n" // 2 s
-			"      %s--passwd-file=<password-file>)\n" // 3 s
+			"      %s--output=<encrypted_filename> (--passwd=<password> --- Password has no length restrictions.\n" // s
+			"      %s--passwd-file=<file>)                              --- If you want to encrypt data with token,\n" // s
+			"      %s                                                   --- specify /dev/sdX1 partition of token\n" // s
+			"      %s                                                   --- device in parameter --passwd-file.\n" // s
+			"      %s                                                   --- Also if you want to specify additional\n" // s
+			"      %s                                                   --- password pass it in --passwd parameter\n" // s
 			"      or\n"
-			"      %s --action=decrypt --input=<input_filename>         --- Decrypt file using the same password.\n" // 4
-			"      %s--output=<output_filename> (--passwd=<password>    --- Password has no length restrictions.\n" // 5 s
-			"      %s--passwd-file=<password-file>)\n" // 6 s
+			"      %s --action=decrypt --input=<input_filename>         --- Decrypt file using the same password.\n" // 2
+			"      %s--output=<output_filename> (--passwd=<password>    --- Password has no length restrictions.\n" // s
+			"      %s--passwd-file=<password-file>)                     --- There are the same features as in en-\n" // s
+			"      %s                                                   --- crypt\n" // s
 			"      or\n"
-			"      %s --action=info                                     --- Get more information how program works\n" // 7
-			"      %s                                                   --- and test progress bar.\n" // 8 s
+			"      %s --action=info                                     --- Get more information how program works\n" // 3
+			"      %s                                                   --- and test progress bar.\n" // s
 			"      or\n"
-			"      %s --action=install-completions <program_name>       --- Installs completions (if run from sudo -\n" // 9
-			"      %s                                                   --- for all users, otherwise - only for\n" // 10 s
-			"      %s                                                   --- current user).\n" // 11 s
+			"      %s --action=install-completions <program_name>       --- Installs completions (if run from sudo\n" // 4
+			"      %s                                                   --- - for all users, otherwise - only for\n" // s
+			"      %s                                                   --- current user).\n" // s
 			"      or\n"
-			"      %s --action=uninstall-completions <program_name>     --- Uninstalls completions (if run from sudo -\n" // 12
-			"      %s                                                   --- for all users, otherwise - only for current\n" // 13 s
-			"      %s                                                   --- user).\n", // 14 s
-			// 1        2        3        4        5        6        7        8        9       10       11       12       13       14
-			appname, spacing, spacing, appname, spacing, spacing, appname, spacing, appname, spacing, spacing, appname, spacing, spacing
+			"      %s --action=uninstall-completions <program_name>     --- Uninstalls completions (if run from sudo\n" // 5
+			"      %s                                                   --- - for all users, otherwise - only for\n" // s
+			"      %s                                                   --- current user).\n\n" // s
+			"      NOTE: If you've not specified --passwd or --passwd-file parameters for encrypting or decrypting,\n" // s
+			"            program will ask password from stdin\n", // s
+			// 1        s        s        s        s        s        s
+			appname, spacing, spacing, spacing, spacing, spacing, spacing,
+			// 2        s        s        s
+			appname, spacing, spacing, spacing,
+			// 3        s
+			appname, spacing,
+			// 4        s        s
+			appname, spacing, spacing,
+			// 5        s        s
+			appname, spacing, spacing
 	);
 	exit(0);
 }

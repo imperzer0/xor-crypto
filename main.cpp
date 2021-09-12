@@ -230,6 +230,7 @@ int main(int argc, const char** argv)
 	else if (action == "install-completions" && argc == 3)
 	{
 		completions comp(argv[2]);
+		comp.init();
 		comp.set("help", nullptr, "print help");
 		comp.set(
 				"action", new const char* []{"encrypt", "decrypt", "info", "help", "install-completions", "uninstall-completions", nullptr},

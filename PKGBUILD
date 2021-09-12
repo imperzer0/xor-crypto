@@ -1,13 +1,13 @@
 pkgname="xor-crypto"
 epoch=3
 pkgver=7
-pkgrel=2
+pkgrel=3
 pkgdesc="xor encryptor program"
 arch=("x86_64")
 url="https://github.com/imperzer0/xor-crypto"
 license=('GPL')
 depends=("gcc-libs" "glibc" "libzip")
-makedepends=("cmake>=3.0" "gcc" "fish-completions>=1:7-1" "parse-arguments>=1:8-1")
+makedepends=("cmake>=3.0" "gcc" "fish-completions>=1:8-1" "parse-arguments>=1:8-1")
 source=("local://main.cpp" "local://CMakeLists.txt" "local://functions.hpp" "local://archive_and_encrypt.hpp" "local://completions.hpp" "local://terminal_output.hpp")
 md5sums=("SKIP" "SKIP" "SKIP" "SKIP" "SKIP" "SKIP")
 install=xor-crypto.install

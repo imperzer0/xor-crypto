@@ -43,8 +43,8 @@ inline static void help(FILE* output_stream, const char* appname)
 			"      %s --action=uninstall-completions <program_name>     --- Uninstalls completions (if run from sudo\n" // 5
 			"      %s                                                   --- - for all users, otherwise - only for\n" // s
 			"      %s                                                   --- current user).\n\n" // s
-			"      NOTE: If you've not specified --passwd or --passwd-file parameters for encrypting or decrypting,\n" // s
-			"            program will ask password from stdin\n", // s
+			"NOTE: If you've not specified --passwd or --passwd-file parameters for encrypting or decrypting,\n" // s
+			"      program will ask password from stdin\n", // s
 			// 1        s        s        s        s        s        s
 			appname, spacing, spacing, spacing, spacing, spacing, spacing,
 			// 2        s        s        s

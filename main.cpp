@@ -251,9 +251,6 @@ int main(int argc, const char** argv)
 	else if ((action == "uninstall-completions") && argc == 3)
 	{
 		completions comp(argv[2]);
-		std::string str("complete -c ");
-		str += argv[2];
-		str += " ";
 		comp.uninstall();
 	}
 	else

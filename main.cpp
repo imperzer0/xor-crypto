@@ -8,10 +8,10 @@
 
 namespace anm
 {
-	static constexpr const char* action = "--action";
-	static constexpr const char* input = "--input";
-	static constexpr const char* output = "--output";
-	static constexpr const char* passwd = "--passwd";
+	static constexpr const char* action      = "--action";
+	static constexpr const char* input       = "--input";
+	static constexpr const char* output      = "--output";
+	static constexpr const char* passwd      = "--passwd";
 	static constexpr const char* passwd_file = "--passwd-file";
 }
 
@@ -233,20 +233,28 @@ int main(int argc, const char** argv)
 		comp.init();
 		comp.set("help", nullptr, "print help");
 		comp.set(
-				"action", new const char* []{"encrypt", "decrypt", "info", "help", "install-completions", "uninstall-completions", nullptr},
+				"action", new const char* []{
+						"echo encrypt",
+						"echo decrypt",
+						"echo info",
+						"echo help",
+						"echo install-completions",
+						"echo uninstall-completions",
+						nullptr
+				},
 				"action"
 		);
 		comp.set(
-				"input", new const char* []{"(ls -p | grep -v /)", "\\\\&stdin", nullptr}, "input file or directory",
+				"input", new const char* []{"ls -p | grep -v /", "echo \\\\&stdin", nullptr}, "input file or directory",
 				new const char* []{"--action=encrypt", nullptr}
 		);
 		comp.set(
-				"input", new const char* []{"(ls -p | grep -v /)", "\\\\&stdin", nullptr}, "input file",
+				"input", new const char* []{"ls -p | grep -v /", "echo \\\\&stdin", nullptr}, "input file",
 				new const char* []{"--action=decrypt", nullptr}
 		);
-		comp.set("output", new const char* []{"(ls -p | grep -v /)", nullptr}, "output file");
+		comp.set("output", new const char* []{"ls -p | grep -v /", nullptr}, "output file");
 		comp.set("passwd", nullptr, "password");
-		comp.set("passwd-file", new const char* []{"(ls -p | grep -v /)", nullptr}, "file with password");
+		comp.set("passwd-file", new const char* []{"ls -p | grep -v /", nullptr}, "file with password");
 	}
 	else if ((action == "uninstall-completions") && argc == 3)
 	{
